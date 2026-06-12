@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <!-- Bloquea el zoom accidental en pantallas táctiles de celulares -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="format-detection" content="telephone=no">
+    <meta name="theme-color" content="#f6f8fb">
+    <title>Evaluación del Menú</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- VISTA DEL COMENSAL -->
+        <div id="vistaComensal">
+            <h1>Evaluación del Menú</h1>
+            <div class="card">
+                <h2>¿Qué te pareció el menú de hoy?</h2>
+                <div class="button-group">
+                    <button class="btn btn-like" id="btnLike" ontouchstart="">👍 Me gustó</button>
+                    <button class="btn btn-dislike" id="btnDislike" ontouchstart="">👎 No me gustó</button>
+                    <button class="btn btn-skip" id="btnOmitir" ontouchstart="">🤫 Omito comentario</button>
+                </div>
+                <div class="status-selection">
+                    Selección actual: <span id="lblSeleccion" class="badge">Ninguna</span>
+                </div>
+                <button class="btn btn-submit" id="btnGuardar" ontouchstart="">Enviar Voto</button>
+            </div>
+            
+            <div class="webmaster-credits">Webmaster: Cesar Manriquez</div>
+            <p class="admin-link" id="lnkAccesoAdmin">🔐 Acceso Administrador</p>
+        </div>
+
+        <!-- VISTA DEL ADMINISTRADOR -->
+        <div id="vistaAdmin" style="display: none;">
+            <button class="btn-back" id="btnVolver" ontouchstart="">⬅️ Volver a Votación</button>
+            <h1>Panel del Chef</h1>
+            
+            <!-- Turno Activo -->
+            <div class="card">
+                <h2>Servicio En Curso</h2>
+                <div class="chart-box">
+                    <div id="tortaNativa" class="pie-chart"></div>
+                </div>
+                <div class="leyenda">
+                    <div class="leyenda-item"><span class="dot verde"></span> Me gustó: <strong id="pctLike">0%</strong> (<span id="cantLike">0</span>)</div>
+                    <div class="leyenda-item"><span class="dot rojo"></span> No me gustó: <strong id="pctDislike">0%</strong> (<span id="cantDislike">0</span>)</div>
+                    <div class="leyenda-item"><span class="dot gris"></span> Omitido: <strong id="pctSkip">0%</strong> (<span id="cantSkip">0</span>)</div>
+                </div>
+                <p class="total-votos">Votos en este turno: <span id="totalVotos">0</span></p>
+                <button class="btn btn-clear" id="btnLimpiar" ontouchstart="">Cerrar Turno y Reiniciar 🗑️</button>
+            </div>
+
+            <!-- HISTORIAL DE TURNOS PASADOS -->
+            <div class="card card-history">
+                <h2>Historial de Turnos Pasados</h2>
+                <div id="listaHistorial" class="history-container">
+                    <p style="color:#94a3b8; font-size:0.9rem; text-align:center;">Cargando historial...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>

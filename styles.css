@@ -1,0 +1,286 @@
+/* --- CONFIGURACIÓN PARA RESTAURANTE VIP --- */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-tap-highlight-color: transparent; 
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+body {
+    /* Fondo VIP: Ambiente de restaurante de lujo nocturno */
+    background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #020617 100%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    padding-top: calc(20px + env(safe-area-inset-top));
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
+}
+
+.app-container {
+    width: 100%;
+    max-width: 410px;
+}
+
+h1 {
+    text-align: center;
+    color: #fef08a; /* Oro Suave */
+    font-size: 1.8rem;
+    font-weight: 800;
+    margin-bottom: 28px;
+    letter-spacing: 0.5px;
+    text-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+/* --- TARJETA CRISTAL OSCURECIDO PREMIUM --- */
+.card {
+    background: rgba(15, 23, 42, 0.6) !important;
+    backdrop-filter: blur(24px) !important;
+    -webkit-backdrop-filter: blur(24px) !important;
+    padding: 36px 28px;
+    border-radius: 28px;
+    box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.7),
+                inset 0 1px 0 0 rgba(254, 240, 138, 0.15);
+    border: 1px solid rgba(254, 240, 138, 0.1) !important;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.card h2 {
+    font-size: 1.15rem;
+    color: #f8fafc;
+    font-weight: 600;
+    margin-bottom: 28px;
+    line-height: 1.5;
+    letter-spacing: 0.2px;
+}
+
+/* --- BOTONES DE INTERACCIÓN LUXURY --- */
+.button-group {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 28px;
+}
+
+.btn {
+    padding: 18px 24px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
+    cursor: pointer;
+    width: 100%;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 16px;
+    background-color: #1e293b;
+    color: #f1f5f9;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn:active {
+    transform: scale(0.96);
+}
+
+.btn-like.active { 
+    background-color: #10b981 !important; /* Verde esmeralda */
+    color: #ffffff !important; 
+    border-color: #34d399; 
+    box-shadow: 0 8px 24px rgba(16, 185, 129, 0.4);
+}
+.btn-dislike.active { 
+    background-color: #e11d48 !important; /* Rojo rubí */
+    color: #ffffff !important; 
+    border-color: #fb7185; 
+    box-shadow: 0 8px 24px rgba(225, 29, 72, 0.4);
+}
+.btn-skip.active { 
+    background-color: #475569 !important; 
+    color: #ffffff !important; 
+    border-color: #94a3b8; 
+    box-shadow: 0 8px 24px rgba(71, 85, 105, 0.4);
+}
+
+/* --- SELECCIÓN ACTUAL --- */
+.status-selection {
+    font-size: 0.88rem;
+    color: #94a3b8;
+    margin-bottom: 22px;
+    font-weight: 600;
+}
+
+.badge {
+    font-weight: 800;
+    color: #fef08a;
+    background: rgba(254, 240, 138, 0.1);
+    padding: 5px 14px;
+    border-radius: 12px;
+    margin-left: 6px;
+    border: 1px solid rgba(254, 240, 138, 0.2);
+}
+
+/* --- BOTÓN ENVIAR --- */
+.btn-submit {
+    background: linear-gradient(135deg, #eab308 0%, #ca8a04 50%, #a16207 100%) !important;
+    color: #0f172a !important;
+    border: none;
+    padding: 18px;
+    border-radius: 20px;
+    font-weight: 800;
+    font-size: 1.15rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 10px 25px rgba(234, 179, 8, 0.25);
+    letter-spacing: 0.5px;
+}
+
+.btn-submit:active {
+    background: linear-gradient(135deg, #ca8a04 0%, #a16207 100%) !important;
+    transform: scale(0.98);
+}
+
+.admin-link {
+    text-align: center;
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 14px;
+    cursor: pointer;
+    margin-top: 8px;
+    display: inline-block;
+    width: 100%;
+}
+
+.btn-back {
+    background: none;
+    border: none;
+    color: #fef08a;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+}
+
+/* --- PANEL ADMINISTRATIVO EN MODO OSCURO --- */
+.pie-chart {
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    background: #0f172a;
+    box-shadow: inset 0 4px 10px rgba(0, 0, 0, 0.5);
+    margin: 0 auto;
+}
+
+.leyenda {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 24px;
+    background: #1e293b;
+    padding: 18px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.leyenda-item {
+    display: flex;
+    align-items: center;
+    font-size: 0.92rem;
+    color: #cbd5e1;
+    font-weight: 600;
+}
+
+.leyenda-item strong {
+    margin-left: auto;
+    color: #ffffff;
+}
+
+.dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 10px;
+}
+
+.verde { background-color: #10b981; }
+.rojo { background-color: #e11d48; }
+.gris { background-color: #475569; }
+
+.total-votos {
+    margin-top: 20px;
+    font-size: 0.9rem;
+    color: #94a3b8;
+    font-weight: 600;
+}
+
+.btn-clear {
+    background-color: rgba(225, 29, 72, 0.1);
+    color: #fda4af;
+    font-size: 0.9rem;
+    font-weight: 700;
+    padding: 14px;
+    border-radius: 16px;
+    border: 1px solid rgba(225, 29, 72, 0.2);
+    margin-top: 20px;
+    width: 100%;
+}
+
+/* --- HISTORIAL --- */
+.card-history h2 { color: #fef08a; }
+.history-container { max-height: 280px; overflow-y: auto; padding-right: 4px; }
+.history-item { background: #1e293b; border: 1px solid rgba(255, 255, 255, 0.05); border-left: 5px solid #eab308; padding: 14px; border-radius: 14px; margin-bottom: 12px; text-align: left; }
+.history-date { color: #fef08a; font-weight: 800; font-size: 0.8rem; margin-bottom: 6px; }
+.history-stats { display: flex; justify-content: space-between; font-size: 0.9rem; color: #e2e8f0; font-weight: 600; }
+
+/* --- 💡 NUEVO: EFECTO LETRERO DE NEÓN VIP PARA EL WEBMASTER --- */
+.webmaster-credits {
+    text-align: center;
+    font-size: 0.85rem;
+    font-weight: 800;
+    margin-top: 32px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #ffffff;
+    
+    /* Capas de sombras superpuestas para lograr el brillo de luz neón */
+    text-shadow: 
+        0 0 4px #ffffff,
+        0 0 11px #ffffff,
+        0 0 19px #fef08a,
+        0 0 40px #eab308,
+        0 0 80px #eab308,
+        0 0 100px #ca8a04;
+        
+    /* Animación de parpadeo realista conectada abajo */
+    animation: parpadeoNeon 3s infinite alternate;
+}
+
+@keyframes parpadeoNeon {
+    0%, 18%, 22%, 25%, 53%, 57%, 100% {
+        text-shadow:
+            0 0 4px #ffffff,
+            0 0 11px #ffffff,
+            0 0 19px #fef08a,
+            0 0 40px #eab308,
+            0 0 80px #eab308,
+            0 0 100px #ca8a04;
+    }
+    20%, 24%, 55% {        
+        /* Simula una sutil caída de corriente del tubo de neón */
+        color: rgba(254, 240, 138, 0.3);
+        text-shadow: 0 0 2px rgba(234, 179, 8, 0.1);
+    }
+}

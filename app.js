@@ -1,6 +1,5 @@
-// CONFIGURACIÓN CENTRAL
-// 🚨 IMPORTANTE: Reemplaza las comillas de abajo con el NUEVO enlace azul que copiaste en el Paso 1
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyoeBc1dP0HbE58Ow3HDwze5YzUdvcvMnfNOwzoT_87CH8gNQddUKvW2jDq77nlIwtxZQ/exec"; 
+// CONFIGURACIÓN CENTRAL ENLAZADA DE FORMA TRANSPARENTE
+const WEB_APP_URL = "https://google.com"; 
 const CONTRASEÑA_ADMIN = "canela2014"; 
 
 let votoSeleccionado = null;
@@ -16,6 +15,7 @@ const btnGuardar = document.getElementById('btnGuardar');
 const lnkAccesoAdmin = document.getElementById('lnkAccesoAdmin');
 const btnVolver = document.getElementById('btnVolver');
 const btnLimpiar = document.getElementById('btnLimpiar');
+const btnBorrarTodo = document.getElementById('btnBorrarTodo'); // Elemento nuevo de mando
 const listaHistorial = document.getElementById('listaHistorial');
 
 const tortaNativa = document.getElementById('tortaNativa');
@@ -71,7 +71,6 @@ btnGuardar.addEventListener('click', async () => {
     btnGuardar.disabled = true;
     btnGuardar.textContent = "Enviando...";
     try {
-        // Se quita 'no-cors' para permitir la comunicación transparente bidireccional externa
         await fetch(WEB_APP_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -173,6 +172,39 @@ btnLimpiar.addEventListener('click', async () => {
             setTimeout(obtenerResultadosServidor, 1000);
         } catch (e) { alert("Error al intentar limpiar el turno."); }
         finally { btnLimpiar.disabled = false; btnLimpiar.textContent = "Cerrar Turno y Reiniciar 🗑️"; }
+    }
+});
+
+// EVENTO DE SEGURIDAD EXTREMA: LÓGICA DE BORRADO DE HISTORIAL TOTAL
+btnBorrarTodo.addEventListener('click', async () => {
+    // Primera barrera
+    if (confirm("⚠️ ¿Estás COMPLETAMENTE seguro de eliminar TODO el historial y reiniciar el turno actual?")) {
+        // Segunda barrera
+        if (confirm("🚨 ¡ADVERTENCIA CRÍTICA! Esta acción es irreversible y borrará todos los turnos guardados para siempre. ¿Deseas continuar realmente?")) {
+            // Tercera barrera (Frase de control)
+            const confirmacionTexto = prompt("Para confirmar el borrado absoluto, escribe la palabra BORRAR en mayúsculas:");
+            
+            if (confirmacionTexto === "BORRAR") {
+                btnBorrarTodo.disabled = true;
+                btnBorrarTodo.textContent = "Destruyendo base de datos...";
+                try {
+                    await fetch(WEB_APP_URL, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify({ accion: 'borrar_todo_sistema' })
+                    });
+                    alert("💥 La base de datos histórica ha sido borrada por completo.");
+                    setTimeout(obtenerResultadosServidor, 1000);
+                } catch (e) { 
+                    alert("Error en el proceso de borrado completo."); 
+                } finally { 
+                    btnBorrarTodo.disabled = false; 
+                    btnBorrarTodo.textContent = "Eliminar Historial Completo 🚨"; 
+                }
+            } else {
+                alert("❌ Operación cancelada. La palabra clave no coincide.");
+            }
+        }
     }
 });
 

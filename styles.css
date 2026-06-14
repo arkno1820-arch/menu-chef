@@ -147,18 +147,6 @@ h1 {
     transform: scale(0.98);
 }
 
-.admin-link {
-    text-align: center;
-    color: rgba(255, 255, 255, 0.3);
-    font-size: 0.85rem;
-    font-weight: 600;
-    padding: 14px;
-    cursor: pointer;
-    margin-top: 8px;
-    display: inline-block;
-    width: 100%;
-}
-
 .btn-back {
     background: none;
     border: none;
@@ -207,80 +195,42 @@ h1 {
     color: #ffffff;
 }
 
-.dot {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    display: inline-block;
-    margin-right: 10px;
-}
-
-.verde { background-color: #10b981; }
-.rojo { background-color: #e11d48; }
-.gris { background-color: #475569; }
-
-.total-votos {
-    margin-top: 20px;
-    font-size: 0.9rem;
-    color: #94a3b8;
-    font-weight: 600;
-}
-
-.btn-clear {
-    background-color: rgba(225, 29, 72, 0.1);
-    color: #fda4af;
-    font-size: 0.9rem;
-    font-weight: 700;
-    padding: 14px;
-    border-radius: 16px;
-    border: 1px solid rgba(225, 29, 72, 0.2);
-    margin-top: 20px;
+/* --- NUEVOS ESTILOS PARA EL PIE DE PÁGINA PROFESIONAL --- */
+.footer-container {
+    margin-top: 30px;
+    text-align: center;
     width: 100%;
 }
 
-/* --- HISTORIAL --- */
-.card-history h2 { color: #fef08a; }
-.history-container { max-height: 280px; overflow-y: auto; padding-right: 4px; }
-.history-item { background: #1e293b; border: 1px solid rgba(255, 255, 255, 0.05); border-left: 5px solid #eab308; padding: 14px; border-radius: 14px; margin-bottom: 12px; text-align: left; }
-.history-date { color: #fef08a; font-weight: 800; font-size: 0.8rem; margin-bottom: 6px; }
-.history-stats { display: flex; justify-content: space-between; font-size: 0.9rem; color: #e2e8f0; font-weight: 600; }
-
-/* --- 💡 NUEVO: EFECTO LETRERO DE NEÓN VIP PARA EL WEBMASTER --- */
-.webmaster-credits {
+.admin-link {
     text-align: center;
-    font-size: 0.85rem;
-    font-weight: 800;
-    margin-top: 32px;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: #ffffff;
-    
-    /* Capas de sombras superpuestas para lograr el brillo de luz neón */
-    text-shadow: 
-        0 0 4px #ffffff,
-        0 0 11px #ffffff,
-        0 0 19px #fef08a,
-        0 0 40px #eab308,
-        0 0 80px #eab308,
-        0 0 100px #ca8a04;
-        
-    /* Animación de parpadeo realista conectada abajo */
-    animation: parpadeoNeon 3s infinite alternate;
+    color: rgba(255, 255, 255, 0.35); /* Tono claro elegante */
+    font-size: 0.88rem;
+    font-weight: 600;
+    padding: 12px;
+    cursor: pointer;
+    margin-top: 8px;
+    display: inline-block;
+    width: 100%;
+    text-shadow: none; /* Quita el efecto glow anterior */
+    transition: color 0.2s ease;
 }
 
-@keyframes parpadeoNeon {
-    0%, 18%, 22%, 25%, 53%, 57%, 100% {
-        text-shadow:
-            0 0 4px #ffffff,
-            0 0 11px #ffffff,
-            0 0 19px #fef08a,
-            0 0 40px #eab308,
-            0 0 80px #eab308,
-            0 0 100px #ca8a04;
-    }
-    20%, 24%, 55% {        
-        /* Simula una sutil caída de corriente del tubo de neón */
-        color: rgba(254, 240, 138, 0.3);
-        text-shadow: 0 0 2px rgba(234, 179, 8, 0.1);
-    }
+.admin-link:active {
+    color: rgba(255, 255, 255, 0.6); /* Brillo moderado interactivo */
+}
+
+.webmaster-credits {
+    color: rgba(255, 255, 255, 0.4); /* Gris suave de fondo */
+    font-size: 0.8rem;
+    font-weight: 400;
+    line-height: 1.6;
+    letter-spacing: 0.4px;
+    margin-top: 5px;
+    text-shadow: none; /* Elimina cualquier distorsión borrosa */
+}
+
+.webmaster-credits strong {
+    color: rgba(255, 255, 255, 0.7); /* Destaca el nombre sin quemar la vista */
+    font-weight: 700;
 }

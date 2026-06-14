@@ -195,6 +195,31 @@ h1 {
     color: #ffffff;
 }
 
+/* REGLAS COMPLEMENTARIAS PARA EL HISTORIAL */
+.total-votos {
+    color: #94a3b8;
+    font-size: 0.95rem;
+    margin-top: 15px;
+    margin-bottom: 15px;
+}
+
+.btn-clear {
+    background: rgba(225, 29, 72, 0.1) !important;
+    border: 1px solid rgba(225, 29, 72, 0.2) !important;
+    color: #fb7185 !important;
+    padding: 14px;
+    border-radius: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    width: 100%;
+}
+
+.history-container {
+    max-height: 250px;
+    overflow-y: auto;
+    text-align: left;
+}
+
 /* --- NUEVOS ESTILOS PARA EL PIE DE PÁGINA PROFESIONAL --- */
 .footer-container {
     margin-top: 30px;
@@ -204,7 +229,7 @@ h1 {
 
 .admin-link {
     text-align: center;
-    color: rgba(255, 255, 255, 0.35); /* Tono claro elegante */
+    color: rgba(255, 255, 255, 0.35); 
     font-size: 0.88rem;
     font-weight: 600;
     padding: 12px;
@@ -212,25 +237,25 @@ h1 {
     margin-top: 8px;
     display: inline-block;
     width: 100%;
-    text-shadow: none; /* Quita el efecto glow anterior */
+    text-shadow: none; 
     transition: color 0.2s ease;
 }
 
 .admin-link:active {
-    color: rgba(255, 255, 255, 0.6); /* Brillo moderado interactivo */
+    color: rgba(255, 255, 255, 0.6); 
 }
 
 .webmaster-credits {
-    color: rgba(255, 255, 255, 0.4); /* Gris suave de fondo */
+    color: rgba(255, 255, 255, 0.4); 
     font-size: 0.8rem;
     font-weight: 400;
     line-height: 1.6;
     letter-spacing: 0.4px;
     margin-top: 5px;
-    text-shadow: none; /* Elimina cualquier distorsión borrosa */
+    text-shadow: none; 
 }
 
 .webmaster-credits strong {
-    color: rgba(255, 255, 255, 0.7); /* Destaca el nombre sin quemar la vista */
+    color: rgba(255, 255, 255, 0.7); 
     font-weight: 700;
 }

@@ -1,7 +1,7 @@
 // CONFIGURACIÓN CENTRAL
 // 🚨 IMPORTANTE: Reemplaza las comillas de abajo con tu enlace azul de Google Apps Script que copiaste en el paso anterior
 const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwkZTjC4Rz-me1efoy0l-aDe6wzJYFjtOgP7uKjErh01DZqbU3Xshu6IlPQvssE6ql-qg/exec"; 
-const CONTRASEÑA_ADMIN = "1234"; 
+const CONTRASEÑA_ADMIN = "canela2014"; 
 
 let votoSeleccionado = null;
 let currentMenuId = null;

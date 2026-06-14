@@ -1,6 +1,6 @@
 // CONFIGURACIÓN CENTRAL
-// 🚨 IMPORTANTE: He restaurado el enlace azul correcto de producción terminado en /exec
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwkZTjC4Rz-me1efoy0l-aDe6wzJYFjtOgP7uKjErh01DZqbU3Xshu6IlPQvssE6ql-qg/exec"; 
+// 🚨 IMPORTANTE: Reemplaza las comillas de abajo con el NUEVO enlace azul que copiaste en el Paso 1
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyoeBc1dP0HbE58Ow3HDwze5YzUdvcvMnfNOwzoT_87CH8gNQddUKvW2jDq77nlIwtxZQ/exec"; 
 const CONTRASEÑA_ADMIN = "canela2014"; 
 
 let votoSeleccionado = null;
@@ -71,10 +71,10 @@ btnGuardar.addEventListener('click', async () => {
     btnGuardar.disabled = true;
     btnGuardar.textContent = "Enviando...";
     try {
+        // Se quita 'no-cors' para permitir la comunicación transparente bidireccional externa
         await fetch(WEB_APP_URL, {
             method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify({ accion: 'votar', opcion: votoSeleccionado })
         });
         localStorage.setItem('ultimoMenuVotado', currentMenuId);
@@ -166,8 +166,7 @@ btnLimpiar.addEventListener('click', async () => {
         try {
             await fetch(WEB_APP_URL, {
                 method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify({ accion: 'limpiar' })
             });
             alert("Turno archivado con éxito.");

@@ -1,6 +1,7 @@
 // CONFIGURACIÓN CENTRAL
 // 🚨 IMPORTANTE: Reemplaza las comillas de abajo con tu enlace azul de Google Apps Script que copiaste en el paso anterior
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwkZTjC4Rz-me1efoy0l-aDe6wzJYFjtOgP7uKjErh01DZqbU3Xshu6IlPQvssE6ql-qg/exec"; 
+//const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwkZTjC4Rz-me1efoy0l-aDe6wzJYFjtOgP7uKjErh01DZqbU3Xshu6IlPQvssE6ql-qg/exec"; 
+const WEB_APP_URL = "https://script.google.com/home/projects/1xBUgrAIXkqtWHWowAQHXfrMpLPuQgAZPgV7r55Q5vL0ealSWtxKcw3Xf/edit"; 
 const CONTRASEÑA_ADMIN = "canela2014"; 
 
 let votoSeleccionado = null;

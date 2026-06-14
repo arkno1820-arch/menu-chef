@@ -2,7 +2,6 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <!-- Bloquea el zoom accidental en pantallas táctiles de celulares -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="format-detection" content="telephone=no">
     <meta name="theme-color" content="#f6f8fb">
@@ -27,11 +26,10 @@
                 <button class="btn btn-submit" id="btnGuardar" ontouchstart="">Enviar Voto</button>
             </div>
             
-            <!-- PIE DE PÁGINA ESTILIZADO -->
             <div class="footer-container">
                 <p class="admin-link" id="lnkAccesoAdmin">⚙️ Acceso Administrador</p>
                 <div class="webmaster-credits">
-                    Optimizado para Android e iOS por Webmaster <strong>César Manríquez</strong> © 2026
+                    Optimizado para Android e iOS por el Webmaster <strong>César Manríquez</strong> © 2026
                 </div>
             </div>
         </div>
@@ -53,7 +51,12 @@
                     <div class="leyenda-item"><span class="dot gris"></span> Omitido: <strong id="pctSkip">0%</strong> (<span id="cantSkip">0</span>)</div>
                 </div>
                 <p class="total-votos">Votos en este turno: <span id="totalVotos">0</span></p>
-                <button class="btn btn-clear" id="btnLimpiar" ontouchstart="">Cerrar Turno y Reiniciar 🗑️</button>
+                
+                <div class="admin-actions-group" style="display: flex; flex-direction: column; gap: 12px;">
+                    <button class="btn-clear" id="btnLimpiar" ontouchstart="">Cerrar Turno y Reiniciar 🗑️</button>
+                    <!-- NUEVO BOTÓN EXCLUSIVO DE PROGRAMADOR -->
+                    <button class="btn-danger" id="btnBorrarTodo" ontouchstart="">Eliminar Historial Completo 🚨</button>
+                </div>
             </div>
 
             <!-- HISTORIAL DE TURNOS PASADOS -->
@@ -65,8 +68,6 @@
             </div>
         </div>
     </div>
-    
-    <!-- Vinculación del script que maneja las contraseñas, lógica y fetch a Google Apps Script -->
     <script src="app.js"></script>
 </body>
 </html>

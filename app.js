@@ -171,7 +171,7 @@ btnLimpiar.addEventListener('click', async () => {
             alert("Turno archivado con éxito.");
             setTimeout(obtenerResultadosServidor, 1000);
         } catch (e) { alert("Error al intentar limpiar el turno."); }
-        finally { btnLimpiar.disabled = false; btnLimpiar.textContent = "Cerrar Turno y Reiniciar 🗑️"; }
+        finally { btnLimpiar.disabled = false; btnLimpiar.textContent = "Cerrar Rancho y Reiniciar 🗑️"; }
     }
 });
 

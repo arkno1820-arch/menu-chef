@@ -4,7 +4,6 @@ const CONTRASEÑA_ADMIN = "canela2014";
 
 let votoSeleccionado = null;
 let currentMenuId = null;
-let yaVotoEnEsteTurno = false;
 
 const vistaComensal = document.getElementById('vistaComensal');
 const vistaAdmin = document.getElementById('vistaAdmin');
@@ -182,13 +181,30 @@ function habilitarVotacion() {
     });
 }
 
+// FUNCIÓN PARA VERIFICAR SI EL USUARIO YA VOTÓ
+function usuarioYaVoto() {
+    const ultimoMenuVotado = localStorage.getItem('ultimoMenuVotado');
+    return ultimoMenuVotado === currentMenuId;
+}
+
 async function verificarEstadoVoto() {
     let verificacionCompletada = false;
 
     const timeoutRespaldo = setTimeout(() => {
         if (!verificacionCompletada) {
             currentMenuId = menuIdConocido || "1";
-            habilitarVotacion();
+            if (usuarioYaVoto()) {
+                // Ya votó - mostrar mensaje
+                const intentosKey = `intentos_${currentMenuId}`;
+                const intentos = parseInt(localStorage.getItem(intentosKey) || '0');
+                if (intentos === 0) {
+                    mostrarAgradecimiento();
+                } else {
+                    mostrarAdvertenciaReintento(intentos);
+                }
+            } else {
+                habilitarVotacion();
+            }
         }
     }, 3000);
 
@@ -202,38 +218,26 @@ async function verificarEstadoVoto() {
         menuIdConocido = currentMenuId;
         localStorage.setItem('menuIdConocido', currentMenuId);
 
-        const ultimoMenuVotado = localStorage.getItem('ultimoMenuVotado');
-        
         console.log("=== DEBUG ===");
         console.log("Current Menu ID:", currentMenuId);
-        console.log("Último menú votado:", ultimoMenuVotado);
-        console.log("¿Ya votó en este turno?", ultimoMenuVotado === currentMenuId);
+        console.log("Último menú votado:", localStorage.getItem('ultimoMenuVotado'));
+        console.log("¿Ya votó en este turno?", usuarioYaVoto());
         
-        if (ultimoMenuVotado === currentMenuId) {
-            // EL USUARIO YA VOTÓ - Deshabilitar y mostrar agradecimiento
-            yaVotoEnEsteTurno = true;
-            
-            // Obtener contador de intentos
+        if (usuarioYaVoto()) {
+            // EL USUARIO YA VOTÓ - Deshabilitar y mostrar mensaje
             const intentosKey = `intentos_${currentMenuId}`;
             const intentos = parseInt(localStorage.getItem(intentosKey) || '0');
             
-            // Deshabilitar todo
             deshabilitarVotacion();
             
-            // Si es la primera vez que carga después de votar (intentos === 0)
-            // o si ya ha intentado votar nuevamente (intentos > 0)
             if (intentos === 0) {
-                // Mostrar agradecimiento
                 mostrarAgradecimiento();
             } else {
-                // Mostrar advertencia de reintento
                 mostrarAdvertenciaReintento(intentos);
             }
             
         } else {
             // EL USUARIO NO HA VOTADO - Habilitar votación
-            yaVotoEnEsteTurno = false;
-            
             // Limpiar contador de intentos
             const intentosKey = `intentos_${currentMenuId}`;
             if (localStorage.getItem(intentosKey)) {
@@ -247,7 +251,18 @@ async function verificarEstadoVoto() {
         verificacionCompletada = true;
         clearTimeout(timeoutRespaldo);
         currentMenuId = menuIdConocido || "1";
-        habilitarVotacion();
+        if (usuarioYaVoto()) {
+            deshabilitarVotacion();
+            const intentosKey = `intentos_${currentMenuId}`;
+            const intentos = parseInt(localStorage.getItem(intentosKey) || '0');
+            if (intentos === 0) {
+                mostrarAgradecimiento();
+            } else {
+                mostrarAdvertenciaReintento(intentos);
+            }
+        } else {
+            habilitarVotacion();
+        }
     }
 }
 
@@ -271,8 +286,8 @@ function configurarEventListeners() {
     botonesVoto.forEach(item => {
         if (item.elemento) {
             item.elemento.addEventListener('click', function() {
-                // Si ya votó, incrementar contador y mostrar advertencia
-                if (yaVotoEnEsteTurno) {
+                // VERIFICACIÓN CRÍTICA: Si ya votó, NO permitir selección
+                if (usuarioYaVoto()) {
                     const intentos = incrementarIntentos();
                     deshabilitarVotacion();
                     mostrarAdvertenciaReintento(intentos);
@@ -315,8 +330,8 @@ function configurarEventListeners() {
     
     if (btnGuardar) {
         btnGuardar.addEventListener('click', async function() {
-            // Si ya votó, incrementar contador y mostrar advertencia
-            if (yaVotoEnEsteTurno) {
+            // VERIFICACIÓN CRÍTICA: Si ya votó, NO permitir enviar
+            if (usuarioYaVoto()) {
                 const intentos = incrementarIntentos();
                 deshabilitarVotacion();
                 mostrarAdvertenciaReintento(intentos);
@@ -348,12 +363,10 @@ function configurarEventListeners() {
                     })
                 });
                 
-                // Guardar que ya votó
+                // GUARDAR EN LOCALSTORAGE QUE YA VOTÓ
                 localStorage.setItem('ultimoMenuVotado', currentMenuId);
-                yaVotoEnEsteTurno = true;
                 
                 // INICIALIZAR CONTADOR DE INTENTOS EN 0
-                // Esto asegura que al recargar la página muestre agradecimiento
                 const intentosKey = `intentos_${currentMenuId}`;
                 localStorage.setItem(intentosKey, '0');
                 

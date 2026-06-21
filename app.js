@@ -1,5 +1,5 @@
 // CONFIGURACIÓN CENTRAL ENLAZADA DE FORMA TRANSPARENTE
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxE7Mcj3mRKbzYuft89yr2E6VAj-OA9VdUyl2XmMOax8VItxh7nZM6bO2hFhc129TE-/exec"; 
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwfX9YLv3UwcR4ZmIHxyL2Oh1fkqH_z6mNrvBlfI5ZWxBa9teYjwEwJgTH31FI2fBrJsg/exec"; 
 const CONTRASEÑA_ADMIN = "canela2014"; 
 
 let votoSeleccionado = null;
@@ -43,11 +43,39 @@ const botones = [
     { elemento: btnOmitir, valor: 'Omito comentario' }
 ];
 
+// Bloqueado hasta confirmar (vía verificarEstadoVoto) que este dispositivo no ha votado ya en el turno actual.
+// Esto evita el "doble voto": si el comensal alcanza a votar antes de que cargue el ID del menú vigente,
+// el bloqueo por localStorage podía fallar y dejaba votar otra vez con otra opción.
+if (btnGuardar) {
+    btnGuardar.disabled = true;
+    btnGuardar.textContent = "Cargando...";
+}
+
 // Evita que un comentario del comensal pueda inyectar HTML en el panel del administrador
 function escapeHtml(texto) {
     const div = document.createElement('div');
     div.textContent = texto;
     return div.innerHTML;
+}
+
+// Pantalla mostrada cuando el comensal ya votó en el turno actual. Incluye un botón de
+// retroceso al menú principal, con el mismo estilo que el botón "Volver" del panel del chef.
+function mostrarPantallaAgradecimiento() {
+    const tarjetaVotacion = document.querySelector('#vistaComensal .card');
+    if (!tarjetaVotacion) return;
+    tarjetaVotacion.innerHTML = `
+        <div style="padding: 20px 0;">
+            <h2 style="color: #fef08a; font-size: 1.4rem; font-weight: 700;">¡Gracias por tu participación! 🎉</h2>
+            <p style="color: #94a3b8; margin-top: 12px; font-size: 0.95rem;">
+                Tu opinión sobre el menú de hoy ya ha sido registrada correctamente.
+            </p>
+            <button class="btn-back btn-back-center" id="btnVolverInicio" ontouchstart="">⬅️ Volver al Menú Principal</button>
+        </div>
+    `;
+    const btnVolverInicio = document.getElementById('btnVolverInicio');
+    if (btnVolverInicio) {
+        btnVolverInicio.addEventListener('click', () => { window.location.reload(); });
+    }
 }
 
 async function verificarEstadoVoto() {
@@ -58,18 +86,21 @@ async function verificarEstadoVoto() {
         const ultimoMenuVotado = localStorage.getItem('ultimoMenuVotado');
 
         if (ultimoMenuVotado === currentMenuId) {
-            const tarjetaVotacion = document.querySelector('#vistaComensal .card');
-            tarjetaVotacion.innerHTML = `
-                <div style="padding: 20px 0;">
-                    <h2 style="color: #fef08a; font-size: 1.4rem; font-weight: 700;">¡Gracias por tu participación! 🎉</h2>
-                    <p style="color: #94a3b8; margin-top: 12px; font-size: 0.95rem;">
-                        Tu opinión sobre el menú de hoy ya ha sido registrada correctamente.
-                    </p>
-                </div>
-            `;
-            if(btnGuardar) btnGuardar.style.display = 'none';
+            mostrarPantallaAgradecimiento();
+        } else if (btnGuardar) {
+            // Recién aquí, ya confirmado el ID de menú vigente, se habilita el envío del voto
+            btnGuardar.disabled = false;
+            btnGuardar.textContent = "Enviar Voto";
         }
-    } catch (e) { console.error("Error al verificar estado del voto:", e); }
+    } catch (e) {
+        console.error("Error al verificar estado del voto:", e);
+        // Si la verificación falla por un problema de red, no dejamos al comensal bloqueado:
+        // se habilita el botón igualmente (el bloqueo de doble voto es una capa de cortesía, no de seguridad).
+        if (btnGuardar) {
+            btnGuardar.disabled = false;
+            btnGuardar.textContent = "Enviar Voto";
+        }
+    }
 }
 
 botones.forEach(item => {
@@ -107,6 +138,7 @@ if (txtComentario) {
 
 btnGuardar.addEventListener('click', async () => {
     if (!votoSeleccionado) { alert("Por favor, selecciona una opción."); return; }
+    if (!currentMenuId) { alert("Aún estamos cargando los datos del rancho. Espera un momento e inténtalo de nuevo."); return; }
 
     // El comentario de mejora solo se envía si corresponde a un voto distinto de "Me gustó"
     const comentarioTexto = (votoSeleccionado !== 'Me gustó' && txtComentario) ? txtComentario.value.trim() : '';

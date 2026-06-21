@@ -7,6 +7,27 @@
     <meta name="theme-color" content="#f6f8fb">
     <title>Evaluación del Rancho Naval</title>
     <link rel="stylesheet" href="styles.css">
+    <script>
+        // TRUCO DEL ANCLA: Forzar apertura en navegador externo si viene de un escáner QR efímero
+        (function() {
+            var ua = navigator.userAgent || navigator.vendor || window.opera;
+            var isEmbed = (ua.indexOf("FBAN") > -1) || (ua.indexOf("FBAV") > -1) || 
+                           (ua.indexOf("Instagram") > -1) || (ua.indexOf("TikTok") > -1) || 
+                           (ua.indexOf("GSA") > -1) || (ua.indexOf("Line") > -1) ||
+                           (ua.indexOf("WebView") > -1) || (ua.indexOf("MicroMessenger") > -1);
+            
+            if (isEmbed) {
+                // Si el dispositivo es Android, dispara la intención nativa para forzar la apertura en Chrome
+                if (/Android/i.test(ua)) {
+                    window.location.href = "intent://" + window.location.href.replace(/^https?:\/\//, "") + "#Intent;scheme=https;package=com.android.chrome;end";
+                } 
+                // Si es un iPhone (iOS), le muestra una alerta clara e instructiva para salir del WebView
+                else {
+                    alert("Para registrar tu voto correctamente y evitar errores, por favor presiona el ícono de los tres puntos (...) o la brújula arriba a la derecha y selecciona 'Abrir en Safari' o 'Abrir en navegador predeterminado'.");
+                }
+            }
+        })();
+    </script>
 </head>
 <body>
     <div class="app-container">

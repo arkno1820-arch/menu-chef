@@ -23,6 +23,13 @@
                 <div class="status-selection">
                     Selección actual: <span id="lblSeleccion" class="badge">Ninguna</span>
                 </div>
+
+                <div class="comment-box" id="comentarioBox" style="display:none;">
+                    <label for="txtComentario">¿Qué cambiarías para que fuera un "Me gustó"?</label>
+                    <textarea id="txtComentario" placeholder="Cuéntanos qué mejorarías del menú..." rows="4"></textarea>
+                    <div class="word-counter"><span id="contadorPalabras">0</span>/120 palabras (máximo)</div>
+                </div>
+
                 <button class="btn btn-submit" id="btnGuardar" ontouchstart="">Enviar Voto</button>
             </div>
             
@@ -51,7 +58,12 @@
                     <div class="leyenda-item"><span class="dot gris"></span> Omitido: <strong id="pctSkip">0%</strong> (<span id="cantSkip">0</span>)</div>
                 </div>
                 <p class="total-votos">Votos en este turno: <span id="totalVotos">0</span></p>
-                
+
+                <div class="suggestions-container" id="cajaSugerencias" style="display:none;">
+                    <h3 class="suggestions-title">💡 Sugerencias de mejora (turno actual)</h3>
+                    <div id="listaSugerencias"></div>
+                </div>
+
                 <div class="admin-actions-group" style="display: flex; flex-direction: column; gap: 12px;">
                     <button class="btn-clear" id="btnLimpiar" ontouchstart="">Cerrar Rancho y Reiniciar 🗑️</button>
                     <!-- NUEVO BOTÓN EXCLUSIVO DE PROGRAMADOR -->

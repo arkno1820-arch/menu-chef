@@ -18,6 +18,9 @@ const btnLimpiar = document.getElementById('btnLimpiar');
 const btnBorrarTodo = document.getElementById('btnBorrarTodo');
 const listaHistorial = document.getElementById('listaHistorial');
 
+// Elemento de carga inicial en HTML
+const cargandoInicial = document.getElementById('cargandoInicial');
+
 // Elementos del espacio de comentario/sugerencia del comensal
 const comentarioBox = document.getElementById('comentarioBox');
 const txtComentario = document.getElementById('txtComentario');
@@ -61,6 +64,8 @@ function mostrarAgradecimiento() {
  const tarjetaVotacion = document.querySelector('#vistaComensal .card');
  if (!tarjetaVotacion) return;
  
+ // Ocultar el mensaje de carga si sigue visible
+ if (cargandoInicial) cargandoInicial.style.display = 'none';
  // Ocultar completamente el contenedor de votación
  if (contenidoVotacion) contenidoVotacion.style.display = 'none';
  if (btnGuardar) btnGuardar.style.display = 'none';
@@ -68,7 +73,7 @@ function mostrarAgradecimiento() {
  // Mostrar mensaje de agradecimiento
  tarjetaVotacion.innerHTML = `
  <div style="padding: 20px 0; text-align: center;">
- <h2 style="color: #fef08a; font-size: 1.4rem; font-weight: 700;"> ¡Gracias por tu participación!</h2>
+ <h2 style="color: #fef08a; font-size: 1.4rem; font-weight: 700;">¡Gracias por tu participación!</h2>
  <p style="color: #94a3b8; margin-top: 12px; font-size: 0.95rem;">
  Tu opinión sobre el menú de hoy ya ha sido registrada correctamente.
  </p>
@@ -87,6 +92,9 @@ async function verificarEstadoVoto() {
    currentMenuId = datos.menuId || "1";
    const ultimoMenuVotado = localStorage.getItem('ultimoMenuVotado');
    
+   // Ocultar indicador de carga siempre que termine el fetch exitosamente
+   if (cargandoInicial) cargandoInicial.style.display = 'none';
+
    if (ultimoMenuVotado === currentMenuId) {
      mostrarAgradecimiento();
    } else {
@@ -103,7 +111,10 @@ async function verificarEstadoVoto() {
  } catch (e) {
    console.error("Error al verificar estado del voto:", e);
    
-   // CONTROL ANTI-FRAUDE LOCAL (Si falla el servidor de Google)
+   // SEGURIDAD: Ocultamos el indicador de carga pase lo que pase
+   if (cargandoInicial) cargandoInicial.style.display = 'none';
+   
+   // VALIDACIÓN LOCAL ANTI-FRAUDE (Si falla el servidor de Google por red)
    const ultimoMenuVotado = localStorage.getItem('ultimoMenuVotado');
    if (ultimoMenuVotado) {
      mostrarAgradecimiento();
@@ -258,19 +269,3 @@ async function obtenerResultadosServidor() {
        <div class="suggestion-item">
          <span class="suggestion-tag ${s.opcion === 'No me gustó' ? 'dislike' : 'skip'}">
            ${s.opcion === 'No me gustó' ? '👎' : '💬'}
-         </span>
-         ${escapeHtml(s.texto)}
-       </div>
-     `).join('');
-   } else if (cajaSugerencias) {
-     cajaSugerencias.style.display = 'none';
-     listaSugerencias.innerHTML = '';
-   }
-   
-   if (tortaNativa) {
-     if (total === 0) {
-       tortaNativa.style.background = '#475569';
-       if (pctLike) pctLike.textContent = '0%';
-       if (pctDislike) pctDislike.textContent = '0%';
-       if (pctSkip) pctSkip.textContent = '0%';
-     } else {

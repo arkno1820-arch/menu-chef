@@ -5,7 +5,6 @@ const CONTRASEÑA_ADMIN = "canela2014";
 let votoSeleccionado = null;
 let currentMenuId = null;
 let yaVotoEnEsteTurno = false;
-let intentosVoto = 0;
 
 const vistaComensal = document.getElementById('vistaComensal');
 const vistaAdmin = document.getElementById('vistaAdmin');
@@ -78,7 +77,7 @@ function deshabilitarVotacion() {
     }
 }
 
-// FUNCIÓN PARA MOSTRAR MENSAJE DE AGRADECIMIENTO (PRIMERA VEZ)
+// FUNCIÓN PARA MOSTRAR AGRADECIMIENTO (PRIMERA VEZ QUE VOTA)
 function mostrarAgradecimiento() {
     const tarjetaVotacion = document.querySelector('#vistaComensal .card');
     if (!tarjetaVotacion) return;
@@ -98,8 +97,8 @@ function mostrarAgradecimiento() {
     `;
 }
 
-// FUNCIÓN PARA MOSTRAR MENSAJE DE REINTENTO (2DA, 3RA, ETC VEZ)
-function mostrarReintento(intentos) {
+// FUNCIÓN PARA MOSTRAR ADVERTENCIA DE REINTENTO
+function mostrarAdvertenciaReintento(intentos) {
     const tarjetaVotacion = document.querySelector('#vistaComensal .card');
     if (!tarjetaVotacion) return;
     
@@ -148,20 +147,6 @@ function mostrarReintento(intentos) {
             </p>
         </div>
     `;
-}
-
-// FUNCIÓN PARA MOSTRAR EL MENSAJE CORRECTO SEGÚN EL ESTADO
-function mostrarMensajeSegunEstado() {
-    const intentosKey = `intentos_${currentMenuId}`;
-    const intentos = parseInt(localStorage.getItem(intentosKey) || '0');
-    
-    if (intentos === 0) {
-        // Primera vez que ve el mensaje después de votar
-        mostrarAgradecimiento();
-    } else {
-        // Ya es un reintento
-        mostrarReintento(intentos);
-    }
 }
 
 // FUNCIÓN PARA HABILITAR LA VOTACIÓN (CUANDO NO HA VOTADO)
@@ -225,14 +210,25 @@ async function verificarEstadoVoto() {
         console.log("¿Ya votó en este turno?", ultimoMenuVotado === currentMenuId);
         
         if (ultimoMenuVotado === currentMenuId) {
-            // EL USUARIO YA VOTÓ - Deshabilitar y mostrar mensaje
+            // EL USUARIO YA VOTÓ - Deshabilitar y mostrar agradecimiento
             yaVotoEnEsteTurno = true;
+            
+            // Obtener contador de intentos
+            const intentosKey = `intentos_${currentMenuId}`;
+            const intentos = parseInt(localStorage.getItem(intentosKey) || '0');
             
             // Deshabilitar todo
             deshabilitarVotacion();
             
-            // Mostrar el mensaje correcto según el estado
-            mostrarMensajeSegunEstado();
+            // Si es la primera vez que carga después de votar (intentos === 0)
+            // o si ya ha intentado votar nuevamente (intentos > 0)
+            if (intentos === 0) {
+                // Mostrar agradecimiento
+                mostrarAgradecimiento();
+            } else {
+                // Mostrar advertencia de reintento
+                mostrarAdvertenciaReintento(intentos);
+            }
             
         } else {
             // EL USUARIO NO HA VOTADO - Habilitar votación
@@ -243,7 +239,6 @@ async function verificarEstadoVoto() {
             if (localStorage.getItem(intentosKey)) {
                 localStorage.removeItem(intentosKey);
             }
-            intentosVoto = 0;
             
             habilitarVotacion();
         }
@@ -276,11 +271,11 @@ function configurarEventListeners() {
     botonesVoto.forEach(item => {
         if (item.elemento) {
             item.elemento.addEventListener('click', function() {
-                // Si ya votó, incrementar contador y mostrar mensaje
+                // Si ya votó, incrementar contador y mostrar advertencia
                 if (yaVotoEnEsteTurno) {
                     const intentos = incrementarIntentos();
                     deshabilitarVotacion();
-                    mostrarReintento(intentos);
+                    mostrarAdvertenciaReintento(intentos);
                     return;
                 }
                 
@@ -320,11 +315,11 @@ function configurarEventListeners() {
     
     if (btnGuardar) {
         btnGuardar.addEventListener('click', async function() {
-            // Si ya votó, incrementar contador y mostrar mensaje
+            // Si ya votó, incrementar contador y mostrar advertencia
             if (yaVotoEnEsteTurno) {
                 const intentos = incrementarIntentos();
                 deshabilitarVotacion();
-                mostrarReintento(intentos);
+                mostrarAdvertenciaReintento(intentos);
                 return;
             }
             
@@ -357,7 +352,8 @@ function configurarEventListeners() {
                 localStorage.setItem('ultimoMenuVotado', currentMenuId);
                 yaVotoEnEsteTurno = true;
                 
-                // Inicializar contador de intentos en 0 (para mostrar agradecimiento)
+                // INICIALIZAR CONTADOR DE INTENTOS EN 0
+                // Esto asegura que al recargar la página muestre agradecimiento
                 const intentosKey = `intentos_${currentMenuId}`;
                 localStorage.setItem(intentosKey, '0');
                 

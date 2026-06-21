@@ -64,23 +64,99 @@ function escapeHtml(texto) {
     return div.innerHTML;
 }
 
-// Pantalla mostrada cuando el comensal ya votó en el turno actual.
-// Ya NO incluye botón de volver para evitar el ciclo de recarga
-function mostrarPantallaAgradecimiento() {
+// Función para mostrar mensaje según el número de intentos de voto
+function mostrarMensajeVoto(intentos, esPrimeraVez = false) {
     const tarjetaVotacion = document.querySelector('#vistaComensal .card');
     if (!tarjetaVotacion) return;
     
+    let mensaje = '';
+    let emoji = '';
+    let color = '';
+    let subtexto = '';
+    
+    if (esPrimeraVez) {
+        // Primera vez que vota correctamente
+        mensaje = '¡Gracias por tu participación!';
+        emoji = '🎉';
+        color = '#fef08a';
+        subtexto = 'Tu opinión sobre el menú de hoy ya ha sido registrada correctamente.';
+    } else if (intentos === 1) {
+        // Segunda vez que intenta votar en el mismo turno (primer aviso)
+        mensaje = '¡Oye, ya votaste una vez!';
+        emoji = '👀';
+        color = '#fb923c';
+        subtexto = 'No se permiten votos múltiples en el mismo turno. ¡Sé honesto! 🍽️';
+    } else if (intentos === 2) {
+        // Tercera vez que intenta votar (segundo aviso)
+        mensaje = '¡Ya van DOS veces que intentas votar!';
+        emoji = '😤';
+        color = '#f87171';
+        subtexto = 'El sistema ya registró tu voto. Por favor, no insistas.';
+    } else if (intentos === 3) {
+        // Cuarta vez (tercer aviso)
+        mensaje = '¡TRES VECES INTENTANDO VOTAR!';
+        emoji = '🚨';
+        color = '#ef4444';
+        subtexto = 'Estás abusando del sistema. Tu voto ya fue contado.';
+    } else if (intentos === 4) {
+        // Quinta vez (cuarto aviso - más severo)
+        mensaje = '¡CUATRO VECES! ¡ESTÁS SIENDO REPORTADO!';
+        emoji = '⚠️';
+        color = '#dc2626';
+        subtexto = 'El administrador será notificado de tu comportamiento.';
+    } else if (intentos === 5) {
+        // Sexta vez (quinto aviso - bloqueo temporal)
+        mensaje = '¡BLOQUEADO POR ABUSO!';
+        emoji = '🔒';
+        color = '#991b1b';
+        subtexto = 'Has intentado votar demasiadas veces. Espera al próximo turno.';
+    } else {
+        // Más de 5 intentos - mensaje de bloqueo
+        mensaje = 'ACCESO DENEGADO';
+        emoji = '⛔';
+        color = '#7f1d1d';
+        subtexto = 'Has excedido el límite de intentos. Contacta al administrador si crees que es un error.';
+    }
+    
     tarjetaVotacion.innerHTML = `
         <div style="padding: 30px 0; text-align: center;">
-            <h2 style="color: #fef08a; font-size: 1.5rem; font-weight: 700;">¡Gracias por tu participación! 🎉</h2>
+            <h2 style="color: ${color}; font-size: 1.5rem; font-weight: 700;">${emoji} ${mensaje}</h2>
             <p style="color: #94a3b8; margin-top: 16px; font-size: 1rem; line-height: 1.6;">
-                Tu opinión sobre el menú de hoy ya ha sido registrada correctamente.
+                ${subtexto}
             </p>
+            ${intentos > 0 ? `
+                <div style="margin-top: 20px; padding: 12px; background: rgba(239, 68, 68, 0.1); border-radius: 12px; border: 1px solid rgba(239, 68, 68, 0.2);">
+                    <span style="color: #fca5a5; font-size: 0.9rem;">
+                        ⚠️ Intento de voto múltiple #${intentos + 1}
+                    </span>
+                </div>
+            ` : ''}
             <p style="color: #64748b; margin-top: 20px; font-size: 0.85rem;">
                 Puedes cerrar esta ventana o recargar la página para continuar.
             </p>
         </div>
     `;
+}
+
+// Modificar la función de agradecimiento original para que use el nuevo sistema
+function mostrarPantallaAgradecimiento() {
+    // Verificar si es un reintento
+    const turnoActual = localStorage.getItem('ultimoMenuVotado');
+    const intentosKey = `intentos_${turnoActual}`;
+    let intentos = parseInt(localStorage.getItem(intentosKey) || '0');
+    
+    // Si es la primera vez que ve este mensaje (no hay intentos registrados)
+    if (intentos === 0) {
+        // Guardar que ya vio el mensaje de agradecimiento
+        localStorage.setItem(intentosKey, '0');
+        // Mostrar mensaje de primera vez
+        mostrarMensajeVoto(0, true);
+    } else {
+        // Es un reintento, incrementar contador
+        intentos++;
+        localStorage.setItem(intentosKey, intentos.toString());
+        mostrarMensajeVoto(intentos, false);
+    }
 }
 
 // Habilita el botón de envío con el mejor ID de menú disponible (real o de respaldo),
@@ -119,8 +195,16 @@ async function verificarEstadoVoto() {
 
         const ultimoMenuVotado = localStorage.getItem('ultimoMenuVotado');
         if (ultimoMenuVotado === currentMenuId) {
+            // Si el usuario ya votó, inicializar el contador de intentos si no existe
+            const intentosKey = `intentos_${currentMenuId}`;
+            if (!localStorage.getItem(intentosKey)) {
+                localStorage.setItem(intentosKey, '0');
+            }
             mostrarPantallaAgradecimiento();
         } else {
+            // Limpiar contador de intentos cuando cambia el turno
+            const intentosKey = `intentos_${currentMenuId}`;
+            localStorage.removeItem(intentosKey);
             habilitarEnvio(currentMenuId);
         }
     } catch (e) {
@@ -299,6 +383,13 @@ btnLimpiar.addEventListener('click', async () => {
                 body: JSON.stringify({ accion: 'limpiar' })
             });
             alert("Turno archivado con éxito.");
+            // Limpiar todos los contadores de intentos al cerrar el turno
+            const keys = Object.keys(localStorage);
+            keys.forEach(key => {
+                if (key.startsWith('intentos_')) {
+                    localStorage.removeItem(key);
+                }
+            });
             setTimeout(obtenerResultadosServidor, 1000);
         } catch (e) { alert("Error al intentar limpiar el turno."); }
         finally { btnLimpiar.disabled = false; btnLimpiar.textContent = "Cerrar Rancho y Reiniciar 🗑️"; }
@@ -324,6 +415,13 @@ btnBorrarTodo.addEventListener('click', async () => {
                         body: JSON.stringify({ accion: 'borrar_todo_sistema' })
                     });
                     alert("💥 La base de datos histórica ha sido borrada por completo.");
+                    // Limpiar todos los contadores de intentos
+                    const keys = Object.keys(localStorage);
+                    keys.forEach(key => {
+                        if (key.startsWith('intentos_')) {
+                            localStorage.removeItem(key);
+                        }
+                    });
                     setTimeout(obtenerResultadosServidor, 1000);
                 } catch (e) { 
                     alert("Error en el proceso de borrado completo."); 

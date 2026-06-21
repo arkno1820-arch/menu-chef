@@ -4,6 +4,7 @@ const CONTRASEÑA_ADMIN = "canela2014";
 
 let votoSeleccionado = null;
 let currentMenuId = null;
+let yaVotoEnEsteTurno = false; // Bandera LOCAL para controlar voto
 
 const vistaComensal = document.getElementById('vistaComensal');
 const vistaAdmin = document.getElementById('vistaAdmin');
@@ -24,7 +25,7 @@ const txtComentario = document.getElementById('txtComentario');
 const contadorPalabras = document.getElementById('contadorPalabras');
 const MAX_PALABRAS_COMENTARIO = 120;
 
-// Pantalla de carga inicial y contenedor de la votación (oculto hasta confirmar el estado del voto)
+// Pantalla de carga inicial y contenedor de la votación
 const cargandoInicial = document.getElementById('cargandoInicial');
 const contenidoVotacion = document.getElementById('contenidoVotacion');
 
@@ -47,8 +48,6 @@ const botones = [
     { elemento: btnOmitir, valor: 'Omito comentario' }
 ];
 
-// Último menuId que se logró confirmar con el servidor, guardado localmente como respaldo
-// para cuando la señal en el rancho falle o demore (esto evita dejar al comensal bloqueado).
 let menuIdConocido = localStorage.getItem('menuIdConocido') || null;
 
 // Bloqueado solo brevemente mientras se intenta confirmar el menú vigente con el servidor.
@@ -64,17 +63,43 @@ function escapeHtml(texto) {
     return div.innerHTML;
 }
 
-// Función para mostrar mensaje según el número de intentos de voto
-function mostrarMensajeVoto(intentos, esPrimeraVez = false) {
+// FUNCIÓN PRINCIPAL PARA MOSTRAR QUE YA VOTÓ
+function mostrarQueYaVoto(intentos = 0) {
     const tarjetaVotacion = document.querySelector('#vistaComensal .card');
     if (!tarjetaVotacion) return;
     
+    // OCULTAR TODO EL CONTENIDO DE VOTACIÓN
+    if (cargandoInicial) cargandoInicial.style.display = 'none';
+    if (contenidoVotacion) contenidoVotacion.style.display = 'none';
+    
+    // DESHABILITAR EL BOTÓN DE GUARDAR
+    if (btnGuardar) {
+        btnGuardar.disabled = true;
+        btnGuardar.textContent = "Voto ya registrado";
+        btnGuardar.style.opacity = '0.5';
+        btnGuardar.style.cursor = 'not-allowed';
+    }
+    
+    // OCULTAR LOS BOTONES DE VOTACIÓN
+    botones.forEach(item => {
+        if (item.elemento) {
+            item.elemento.style.display = 'none';
+        }
+    });
+    
+    // OCULTAR EL COMENTARIO BOX
+    if (comentarioBox) {
+        comentarioBox.style.display = 'none';
+    }
+    
+    // MENSAJE SEGÚN INTENTOS
     let mensaje = '';
     let emoji = '';
     let color = '';
     let subtexto = '';
+    let contador = '';
     
-    if (esPrimeraVez) {
+    if (intentos === 0) {
         mensaje = '¡Gracias por tu participación!';
         emoji = '🎉';
         color = '#fef08a';
@@ -94,21 +119,21 @@ function mostrarMensajeVoto(intentos, esPrimeraVez = false) {
         emoji = '🚨';
         color = '#ef4444';
         subtexto = 'Estás abusando del sistema. Tu voto ya fue contado.';
-    } else if (intentos === 4) {
-        mensaje = '¡CUATRO VECES! ¡ESTÁS SIENDO REPORTADO!';
-        emoji = '⚠️';
-        color = '#dc2626';
-        subtexto = 'El administrador será notificado de tu comportamiento.';
-    } else if (intentos === 5) {
-        mensaje = '¡BLOQUEADO POR ABUSO!';
+    } else if (intentos >= 4) {
+        mensaje = '¡ACCESO BLOQUEADO!';
         emoji = '🔒';
         color = '#991b1b';
         subtexto = 'Has intentado votar demasiadas veces. Espera al próximo turno.';
-    } else {
-        mensaje = 'ACCESO DENEGADO';
-        emoji = '⛔';
-        color = '#7f1d1d';
-        subtexto = 'Has excedido el límite de intentos. Contacta al administrador si crees que es un error.';
+    }
+    
+    if (intentos > 0) {
+        contador = `
+            <div style="margin-top: 20px; padding: 12px; background: rgba(239, 68, 68, 0.1); border-radius: 12px; border: 1px solid rgba(239, 68, 68, 0.2);">
+                <span style="color: #fca5a5; font-size: 0.9rem;">
+                    ⚠️ Intento de voto múltiple #${intentos}
+                </span>
+            </div>
+        `;
     }
     
     tarjetaVotacion.innerHTML = `
@@ -117,110 +142,15 @@ function mostrarMensajeVoto(intentos, esPrimeraVez = false) {
             <p style="color: #94a3b8; margin-top: 16px; font-size: 1rem; line-height: 1.6;">
                 ${subtexto}
             </p>
-            ${intentos > 0 ? `
-                <div style="margin-top: 20px; padding: 12px; background: rgba(239, 68, 68, 0.1); border-radius: 12px; border: 1px solid rgba(239, 68, 68, 0.2);">
-                    <span style="color: #fca5a5; font-size: 0.9rem;">
-                        ⚠️ Intento de voto múltiple #${intentos}
-                    </span>
-                </div>
-            ` : ''}
+            ${contador}
             <p style="color: #64748b; margin-top: 20px; font-size: 0.85rem;">
                 Puedes cerrar esta ventana o recargar la página para continuar.
             </p>
         </div>
     `;
-    
-    // DESHABILITAR EL BOTÓN DE GUARDAR PARA EVITAR VOTOS MÚLTIPLES
-    if (btnGuardar) {
-        btnGuardar.disabled = true;
-        btnGuardar.textContent = "Voto ya registrado";
-        btnGuardar.style.opacity = '0.5';
-        btnGuardar.style.cursor = 'not-allowed';
-    }
-    
-    // OCULTAR LOS BOTONES DE VOTACIÓN
-    botones.forEach(item => {
-        if (item.elemento) {
-            item.elemento.style.display = 'none';
-        }
-    });
-    
-    // OCULTAR EL CONTENIDO DE VOTACIÓN
-    if (contenidoVotacion) {
-        contenidoVotacion.style.display = 'none';
-    }
 }
 
-// Función CORREGIDA para cuando el usuario YA votó
-function usuarioYaVoto() {
-    const tarjetaVotacion = document.querySelector('#vistaComensal .card');
-    if (!tarjetaVotacion) return;
-    
-    // Ocultar TODO el contenido de votación INMEDIATAMENTE
-    if (cargandoInicial) cargandoInicial.style.display = 'none';
-    if (contenidoVotacion) contenidoVotacion.style.display = 'none';
-    
-    // DESHABILITAR el botón de guardar
-    if (btnGuardar) {
-        btnGuardar.disabled = true;
-        btnGuardar.textContent = "Voto ya registrado";
-        btnGuardar.style.opacity = '0.5';
-        btnGuardar.style.cursor = 'not-allowed';
-    }
-    
-    // OCULTAR los botones de votación
-    botones.forEach(item => {
-        if (item.elemento) {
-            item.elemento.style.display = 'none';
-        }
-    });
-    
-    // OCULTAR el comentario box
-    if (comentarioBox) {
-        comentarioBox.style.display = 'none';
-    }
-    
-    const turnoActual = localStorage.getItem('ultimoMenuVotado');
-    if (!turnoActual) {
-        tarjetaVotacion.innerHTML = `
-            <div style="padding: 30px 0; text-align: center;">
-                <h2 style="color: #fef08a; font-size: 1.5rem; font-weight: 700;">🎉 ¡Gracias por tu participación!</h2>
-                <p style="color: #94a3b8; margin-top: 16px; font-size: 1rem; line-height: 1.6;">
-                    Tu opinión ya ha sido registrada.
-                </p>
-            </div>
-        `;
-        return;
-    }
-    
-    const intentosKey = `intentos_${turnoActual}`;
-    let intentos = parseInt(localStorage.getItem(intentosKey) || '0');
-    
-    if (intentos === 0) {
-        // Primera vez - mostrar agradecimiento normal
-        tarjetaVotacion.innerHTML = `
-            <div style="padding: 30px 0; text-align: center;">
-                <h2 style="color: #fef08a; font-size: 1.5rem; font-weight: 700;">🎉 ¡Gracias por tu participación!</h2>
-                <p style="color: #94a3b8; margin-top: 16px; font-size: 1rem; line-height: 1.6;">
-                    Tu opinión sobre el menú de hoy ya ha sido registrada correctamente.
-                </p>
-                <p style="color: #64748b; margin-top: 20px; font-size: 0.85rem;">
-                    Puedes cerrar esta ventana o recargar la página para continuar.
-                </p>
-            </div>
-        `;
-        localStorage.setItem(intentosKey, '0');
-    } else {
-        // Ya es un reintento
-        intentos++;
-        localStorage.setItem(intentosKey, intentos.toString());
-        mostrarMensajeVoto(intentos, false);
-    }
-}
-
-// Habilita el botón de envío con el mejor ID de menú disponible (real o de respaldo),
-// y recién aquí se revela el contenido de votación (evita el "flash" de los botones
-// antes de confirmar si el comensal ya votó, que era la causa del loop reportado).
+// Habilita el botón de envío
 function habilitarEnvio(idMenu) {
     currentMenuId = idMenu;
     if (cargandoInicial) cargandoInicial.style.display = 'none';
@@ -238,6 +168,10 @@ function habilitarEnvio(idMenu) {
         btnGuardar.textContent = "Enviar Voto";
         btnGuardar.style.opacity = '1';
         btnGuardar.style.cursor = 'pointer';
+    }
+    
+    if (comentarioBox) {
+        comentarioBox.style.display = 'none';
     }
 }
 
@@ -260,42 +194,44 @@ async function verificarEstadoVoto() {
         menuIdConocido = currentMenuId;
         localStorage.setItem('menuIdConocido', currentMenuId);
 
+        // VERIFICACIÓN CRÍTICA: ¿Ya votó en este turno?
         const ultimoMenuVotado = localStorage.getItem('ultimoMenuVotado');
         
-        // VERIFICACIÓN CRÍTICA: Si ya votó en este turno
+        console.log("=== DEBUG ===");
+        console.log("Current Menu ID:", currentMenuId);
+        console.log("Último menú votado:", ultimoMenuVotado);
+        console.log("¿Coinciden?", ultimoMenuVotado === currentMenuId);
+        
         if (ultimoMenuVotado === currentMenuId) {
-            // El usuario YA VOTÓ - OCULTAR TODO y mostrar mensaje
-            if (cargandoInicial) cargandoInicial.style.display = 'none';
-            if (contenidoVotacion) contenidoVotacion.style.display = 'none';
+            // YA VOTÓ - Mostrar mensaje
+            yaVotoEnEsteTurno = true;
             
-            // DESHABILITAR el botón de guardar
-            if (btnGuardar) {
-                btnGuardar.disabled = true;
-                btnGuardar.textContent = "Voto ya registrado";
-                btnGuardar.style.opacity = '0.5';
-                btnGuardar.style.cursor = 'not-allowed';
-            }
-            
-            // OCULTAR botones de votación
-            botones.forEach(item => {
-                if (item.elemento) {
-                    item.elemento.style.display = 'none';
-                }
-            });
-            
-            // OCULTAR comentario box
-            if (comentarioBox) {
-                comentarioBox.style.display = 'none';
-            }
-            
-            // Mostrar el mensaje correspondiente
-            usuarioYaVoto();
-        } else {
-            // El usuario NO ha votado en este turno - habilitar votación
+            // Obtener contador de intentos
             const intentosKey = `intentos_${currentMenuId}`;
-            if (!localStorage.getItem(intentosKey)) {
+            let intentos = parseInt(localStorage.getItem(intentosKey) || '0');
+            
+            // Si es la primera vez que se muestra (intentos === 0), solo mostrar sin incrementar
+            if (intentos === 0) {
+                // Primera vez - mostrar agradecimiento normal
+                mostrarQueYaVoto(0);
+                // Marcar que ya se mostró el mensaje inicial
                 localStorage.setItem(intentosKey, '0');
+            } else {
+                // Ya es un reintento - incrementar y mostrar mensaje de advertencia
+                intentos++;
+                localStorage.setItem(intentosKey, intentos.toString());
+                mostrarQueYaVoto(intentos);
             }
+        } else {
+            // NO HA VOTADO - Habilitar votación
+            yaVotoEnEsteTurno = false;
+            
+            // Limpiar contador de intentos del turno actual si existe
+            const intentosKey = `intentos_${currentMenuId}`;
+            if (localStorage.getItem(intentosKey)) {
+                localStorage.removeItem(intentosKey);
+            }
+            
             habilitarEnvio(currentMenuId);
         }
     } catch (e) {
@@ -306,11 +242,15 @@ async function verificarEstadoVoto() {
     }
 }
 
+// EVENTOS DE LOS BOTONES DE VOTO
 botones.forEach(item => {
     if (item.elemento) {
         item.elemento.addEventListener('click', () => {
-            // Solo permitir selección si el botón de guardar está habilitado
-            if (btnGuardar && btnGuardar.disabled) return;
+            // Si ya votó, no permitir selección
+            if (yaVotoEnEsteTurno || (btnGuardar && btnGuardar.disabled)) {
+                alert("Ya has votado en este turno. No puedes cambiar tu voto.");
+                return;
+            }
             
             votoSeleccionado = item.valor;
             lblSeleccion.textContent = item.valor;
@@ -328,7 +268,7 @@ botones.forEach(item => {
     }
 });
 
-// Contador y límite de 120 palabras en vivo mientras el comensal escribe
+// Contador y límite de 120 palabras
 if (txtComentario) {
     txtComentario.addEventListener('input', () => {
         let palabras = txtComentario.value.trim().split(/\s+/).filter(Boolean);
@@ -341,49 +281,75 @@ if (txtComentario) {
     });
 }
 
+// EVENTO DEL BOTÓN GUARDAR
 btnGuardar.addEventListener('click', async () => {
-    // VERIFICACIÓN ADICIONAL: Si el botón está deshabilitado, no hacer nada
-    if (btnGuardar.disabled) {
+    // VERIFICACIÓN CRÍTICA: Si ya votó o el botón está deshabilitado
+    if (yaVotoEnEsteTurno || btnGuardar.disabled) {
         alert("Ya has votado en este turno. No se permiten votos múltiples.");
         return;
     }
     
-    if (!votoSeleccionado) { alert("Por favor, selecciona una opción."); return; }
-    if (!currentMenuId) { currentMenuId = menuIdConocido || "1"; }
+    if (!votoSeleccionado) { 
+        alert("Por favor, selecciona una opción."); 
+        return; 
+    }
+    
+    if (!currentMenuId) { 
+        currentMenuId = menuIdConocido || "1"; 
+    }
 
     const comentarioTexto = (votoSeleccionado !== 'Me gustó' && txtComentario) ? txtComentario.value.trim() : '';
 
     btnGuardar.disabled = true;
     btnGuardar.textContent = "Enviando...";
+    
     try {
         await fetch(WEB_APP_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({ accion: 'votar', opcion: votoSeleccionado, comentario: comentarioTexto })
+            body: JSON.stringify({ 
+                accion: 'votar', 
+                opcion: votoSeleccionado, 
+                comentario: comentarioTexto 
+            })
         });
+        
+        // GUARDAR EN LOCALSTORAGE QUE YA VOTÓ EN ESTE TURNO
         localStorage.setItem('ultimoMenuVotado', currentMenuId);
+        
+        // Marcar como ya votado
+        yaVotoEnEsteTurno = true;
+        
         alert("¡Tu opinión ha sido registrada!");
+        
+        // Recargar para mostrar el mensaje de agradecimiento
         window.location.reload();
+        
     } catch (error) {
-        alert("Error de envío.");
+        console.error("Error al enviar voto:", error);
+        alert("Error de envío. Por favor, intenta nuevamente.");
         btnGuardar.disabled = false;
         btnGuardar.textContent = "Enviar Voto";
     }
 });
 
+// ACCESO ADMIN
 lnkAccesoAdmin.addEventListener('click', () => {
     const clave = prompt("Introduce la contraseña:");
     if (clave === CONTRASEÑA_ADMIN) {
         vistaComensal.style.display = 'none';
         vistaAdmin.style.display = 'block';
         obtenerResultadosServidor();
-    } else if (clave !== null) { alert("Incorrecta."); }
+    } else if (clave !== null) { 
+        alert("Incorrecta."); 
+    }
 });
 
 btnVolver.addEventListener('click', () => { 
     window.location.reload(); 
 });
 
+// OBTENER RESULTADOS DEL SERVIDOR
 async function obtenerResultadosServidor() {
     try {
         listaHistorial.innerHTML = `<p style="color:#94a3b8; font-size:0.9rem; text-align:center;">Cargando historial...</p>`;
@@ -468,6 +434,7 @@ async function obtenerResultadosServidor() {
     }
 }
 
+// LIMPIAR TURNO
 btnLimpiar.addEventListener('click', async () => {
     if (confirm("¿Cerrar el turno actual? Los votos pasarán al historial histórico.")) {
         btnLimpiar.disabled = true;
@@ -479,19 +446,26 @@ btnLimpiar.addEventListener('click', async () => {
                 body: JSON.stringify({ accion: 'limpiar' })
             });
             alert("Turno archivado con éxito.");
+            // Limpiar localStorage relacionado con votos
+            localStorage.removeItem('ultimoMenuVotado');
             const keys = Object.keys(localStorage);
             keys.forEach(key => {
                 if (key.startsWith('intentos_')) {
                     localStorage.removeItem(key);
                 }
             });
-            localStorage.removeItem('ultimoMenuVotado');
             setTimeout(obtenerResultadosServidor, 1000);
-        } catch (e) { alert("Error al intentar limpiar el turno."); }
-        finally { btnLimpiar.disabled = false; btnLimpiar.textContent = "Cerrar Rancho y Reiniciar 🗑️"; }
+        } catch (e) { 
+            alert("Error al intentar limpiar el turno."); 
+        }
+        finally { 
+            btnLimpiar.disabled = false; 
+            btnLimpiar.textContent = "Cerrar Rancho y Reiniciar 🗑️"; 
+        }
     }
 });
 
+// BORRAR TODO EL HISTORIAL
 btnBorrarTodo.addEventListener('click', async () => {
     if (confirm("⚠️ ¿Estás COMPLETAMENTE seguro de eliminar TODO el historial y reiniciar el turno actual?")) {
         if (confirm("🚨 ¡ADVERTENCIA CRÍTICA! Esta acción es irreversible y borrará todos los turnos guardados para siempre. ¿Deseas continuar realmente?")) {
@@ -507,13 +481,15 @@ btnBorrarTodo.addEventListener('click', async () => {
                         body: JSON.stringify({ accion: 'borrar_todo_sistema' })
                     });
                     alert("💥 La base de datos histórica ha sido borrada por completo.");
+                    // Limpiar todo el localStorage relacionado con votos
+                    localStorage.removeItem('ultimoMenuVotado');
+                    localStorage.removeItem('menuIdConocido');
                     const keys = Object.keys(localStorage);
                     keys.forEach(key => {
                         if (key.startsWith('intentos_')) {
                             localStorage.removeItem(key);
                         }
                     });
-                    localStorage.removeItem('ultimoMenuVotado');
                     setTimeout(obtenerResultadosServidor, 1000);
                 } catch (e) { 
                     alert("Error en el proceso de borrado completo."); 
@@ -528,4 +504,5 @@ btnBorrarTodo.addEventListener('click', async () => {
     }
 });
 
+// INICIAR LA APLICACIÓN
 verificarEstadoVoto();

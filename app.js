@@ -1,5 +1,5 @@
 // CONFIGURACIÓN CENTRAL ENLAZADA DE FORMA TRANSPARENTE
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxE7Mcj3mRKbzYuft89yr2E6VAj-OA9VdUyl2XmMOax8VItxh7nZM6bO2hFhc129TE-/exec"; 
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwfX9YLv3UwcR4ZmIHxyL2Oh1fkqH_z6mNrvBlfI5ZWxBa9teYjwEwJgTH31FI2fBrJsg/exec"; 
 const CONTRASEÑA_ADMIN = "canela2014"; 
 
 let votoSeleccionado = null;
@@ -15,7 +15,7 @@ const btnGuardar = document.getElementById('btnGuardar');
 const lnkAccesoAdmin = document.getElementById('lnkAccesoAdmin');
 const btnVolver = document.getElementById('btnVolver');
 const btnLimpiar = document.getElementById('btnLimpiar');
-const btnBorrarTodo = document.getElementById('btnBorrarTodo'); // Elemento nuevo de mando
+const btnBorrarTodo = document.getElementById('btnBorrarTodo');
 const listaHistorial = document.getElementById('listaHistorial');
 
 // Elementos del espacio de comentario/sugerencia del comensal
@@ -69,18 +69,23 @@ function escapeHtml(texto) {
 function mostrarPantallaAgradecimiento() {
     const tarjetaVotacion = document.querySelector('#vistaComensal .card');
     if (!tarjetaVotacion) return;
+    
     tarjetaVotacion.innerHTML = `
-        <div style="padding: 20px 0;">
+        <div style="padding: 20px 0; text-align: center;">
             <h2 style="color: #fef08a; font-size: 1.4rem; font-weight: 700;">¡Gracias por tu participación! 🎉</h2>
             <p style="color: #94a3b8; margin-top: 12px; font-size: 0.95rem;">
                 Tu opinión sobre el menú de hoy ya ha sido registrada correctamente.
             </p>
-            <button class="btn-back btn-back-center" id="btnVolverInicio" ontouchstart="">⬅️ Volver al Menú Principal</button>
+            <button class="btn-back" id="btnVolverInicio" style="margin-top: 20px;">⬅️ Volver al Menú Principal</button>
         </div>
     `;
+    
     const btnVolverInicio = document.getElementById('btnVolverInicio');
     if (btnVolverInicio) {
-        btnVolverInicio.addEventListener('click', () => { window.location.reload(); });
+        btnVolverInicio.addEventListener('click', function(e) {
+            e.preventDefault();
+            window.location.reload();
+        });
     }
 }
 
@@ -200,7 +205,9 @@ lnkAccesoAdmin.addEventListener('click', () => {
     } else if (clave !== null) { alert("Incorrecta."); }
 });
 
-btnVolver.addEventListener('click', () => { window.location.reload(); });
+btnVolver.addEventListener('click', () => { 
+    window.location.reload(); 
+});
 
 async function obtenerResultadosServidor() {
     try {

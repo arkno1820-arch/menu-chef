@@ -1,5 +1,5 @@
 // CONFIGURACIÓN CENTRAL ENLAZADA DE FORMA TRANSPARENTE
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzvAXuD5Un_5USZxGwu4i0dEHlUSS-YyQHd-cWnXughE6CIN0IGNMf_Y8wd9mPOkxhefQ/exec"; 
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxE7Mcj3mRKbzYuft89yr2E6VAj-OA9VdUyl2XmMOax8VItxh7nZM6bO2hFhc129TE-/exec"; 
 const CONTRASEÑA_ADMIN = "canela2014"; 
 
 let votoSeleccionado = null;
@@ -56,6 +56,21 @@ function escapeHtml(texto) {
 }
 
 // ======================
+// ID DE DISPOSITIVO (para bloqueo real de voto doble en el servidor)
+// ======================
+function obtenerIdDispositivo() {
+ let id = localStorage.getItem('idDispositivoRancho');
+ if (!id) {
+   id = (window.crypto && crypto.randomUUID)
+     ? crypto.randomUUID()
+     : ('disp_' + Date.now() + '_' + Math.random().toString(36).slice(2));
+   localStorage.setItem('idDispositivoRancho', id);
+ }
+ return id;
+}
+const idDispositivo = obtenerIdDispositivo();
+
+// ======================
 // BLOQUEO DE VOTO MÚLTIPLE
 // ======================
 
@@ -64,13 +79,10 @@ function mostrarAgradecimiento() {
  const tarjetaVotacion = document.querySelector('#vistaComensal .card');
  if (!tarjetaVotacion) return;
  
- // Ocultar el mensaje de carga si sigue visible
  if (cargandoInicial) cargandoInicial.style.display = 'none';
- // Ocultar completamente el contenedor de votación
  if (contenidoVotacion) contenidoVotacion.style.display = 'none';
  if (btnGuardar) btnGuardar.style.display = 'none';
  
- // Mostrar mensaje de agradecimiento
  tarjetaVotacion.innerHTML = `
  <div style="padding: 20px 0; text-align: center;">
  <h2 style="color: #fef08a; font-size: 1.4rem; font-weight: 700;">¡Gracias por tu participación!</h2>
@@ -92,7 +104,6 @@ async function verificarEstadoVoto() {
    currentMenuId = datos.menuId || "1";
    const ultimoMenuVotado = localStorage.getItem('ultimoMenuVotado');
    
-   // Ocultar indicador de carga siempre que termine el fetch exitosamente
    if (cargandoInicial) cargandoInicial.style.display = 'none';
 
    if (ultimoMenuVotado === currentMenuId) {
@@ -110,11 +121,8 @@ async function verificarEstadoVoto() {
    }
  } catch (e) {
    console.error("Error al verificar estado del voto:", e);
-   
-   // SEGURIDAD: Ocultamos el indicador de carga pase lo que pase
    if (cargandoInicial) cargandoInicial.style.display = 'none';
    
-   // VALIDACIÓN LOCAL ANTI-FRAUDE (Si falla el servidor de Google por red)
    const ultimoMenuVotado = localStorage.getItem('ultimoMenuVotado');
    if (ultimoMenuVotado) {
      mostrarAgradecimiento();
@@ -175,7 +183,6 @@ if (txtComentario) {
 // ======================
 if (btnGuardar) {
  btnGuardar.addEventListener('click', async () => {
-   // Re-chequeo justo antes de enviar: bloquea doble click, doble pestaña, etc.
    const ultimoMenuVotado = localStorage.getItem('ultimoMenuVotado');
    if (ultimoMenuVotado === currentMenuId && currentMenuId !== null) {
      alert("Ya has votado en este turno. No se permiten votos múltiples.");
@@ -201,18 +208,23 @@ if (btnGuardar) {
        body: JSON.stringify({ 
          accion: 'votar', 
          opcion: votoSeleccionado, 
-         comentario: comentarioTexto 
+         comentario: comentarioTexto,
+         dispositivo: idDispositivo
        })
      });
 
-     // Si el backend responde con JSON indicando error explícito, no marcamos el voto como hecho
      let resultado = null;
      try { resultado = await respuestaGuardar.json(); } catch (_) { /* backend puede no devolver JSON */ }
+
      if (resultado && resultado.success === false) {
-       throw new Error(resultado.error || 'El servidor rechazó el voto.');
+       // El servidor dice que este dispositivo YA votó en este turno (bloqueo real, no solo local).
+       // Sincronizamos el estado local para reflejar la realidad del servidor.
+       localStorage.setItem('ultimoMenuVotado', currentMenuId || "1");
+       alert(resultado.error || "Ya has votado en este turno.");
+       mostrarAgradecimiento();
+       return;
      }
      
-     // Solo al confirmar el envío marcamos este turno como votado
      localStorage.setItem('ultimoMenuVotado', currentMenuId || "1");
      
      alert("¡Tu opinión ha sido registrada!");
@@ -271,7 +283,6 @@ async function obtenerResultadosServidor() {
    if (cantSkip) cantSkip.textContent = vSkip;
    if (totalVotosTxt) totalVotosTxt.textContent = total;
 
-   // Porcentajes y gráfico de torta (CSS conic-gradient, sin librerías)
    const pLike = total > 0 ? (vLike / total) * 100 : 0;
    const pDislike = total > 0 ? (vDislike / total) * 100 : 0;
    const pSkip = total > 0 ? (vSkip / total) * 100 : 0;
@@ -291,7 +302,7 @@ async function obtenerResultadosServidor() {
    
    const sugerenciasTurno = datos.sugerencias || [];
 
-   // Caja de sugerencias destacadas (comentarios del turno actual)
+   // Sugerencias del turno ACTUAL (el backend guarda el texto en la propiedad "texto", no "comentario")
    if (cajaSugerencias && listaSugerencias) {
      if (sugerenciasTurno.length > 0) {
        cajaSugerencias.style.display = 'block';
@@ -300,7 +311,7 @@ async function obtenerResultadosServidor() {
            <span class="suggestion-tag ${s.opcion === 'No me gustó' ? 'dislike' : 'skip'}">
              ${s.opcion === 'No me gustó' ? '👎' : '💬'}
            </span>
-           <p class="suggestion-text">${escapeHtml(s.comentario || '(sin comentario)')}</p>
+           <p class="suggestion-text">${escapeHtml(s.texto || '(sin comentario)')}</p>
          </div>
        `).join('');
      } else {
@@ -309,20 +320,32 @@ async function obtenerResultadosServidor() {
      }
    }
 
-   // Historial completo
+   // Historial de turnos PASADOS (no el turno actual)
+   const historialTurnos = datos.historial || [];
    if (listaHistorial) {
-     if (sugerenciasTurno.length > 0) {
-       listaHistorial.innerHTML = sugerenciasTurno.map(s => `
-         <div class="suggestion-item">
-           <span class="suggestion-tag ${s.opcion === 'No me gustó' ? 'dislike' : 'skip'}">
-             ${s.opcion === 'No me gustó' ? '👎' : '💬'}
-           </span>
-           <p class="suggestion-text">${escapeHtml(s.comentario || '(sin comentario)')}</p>
-           ${s.fecha ? `<span class="suggestion-date">${escapeHtml(String(s.fecha))}</span>` : ''}
-         </div>
-       `).join('');
+     if (historialTurnos.length > 0) {
+       listaHistorial.innerHTML = historialTurnos.map(turno => {
+         const sugerenciasHtml = (turno.sugerencias || []).map(s => `
+           <div class="suggestion-item">
+             <span class="suggestion-tag ${s.opcion === 'No me gustó' ? 'dislike' : 'skip'}">
+               ${s.opcion === 'No me gustó' ? '👎' : '💬'}
+             </span>
+             <p class="suggestion-text">${escapeHtml(s.texto || '(sin comentario)')}</p>
+           </div>
+         `).join('');
+
+         return `
+           <div class="suggestion-item" style="flex-direction:column; align-items:flex-start; gap:6px;">
+             <strong style="color:#fef08a;">${escapeHtml(String(turno.fecha || ''))}</strong>
+             <span style="color:#94a3b8; font-size:0.85rem;">
+               👍 ${turno['Me gustó'] || 0} &nbsp; 👎 ${turno['No me gustó'] || 0} &nbsp; 🤫 ${turno['Omito comentario'] || 0} &nbsp; Total: ${turno.total || 0}
+             </span>
+             ${sugerenciasHtml}
+           </div>
+         `;
+       }).join('');
      } else {
-       listaHistorial.innerHTML = `<p style="color:#94a3b8; font-size:0.9rem; text-align:center;">Sin comentarios registrados en este turno.</p>`;
+       listaHistorial.innerHTML = `<p style="color:#94a3b8; font-size:0.9rem; text-align:center;">Aún no hay turnos cerrados en el historial.</p>`;
      }
    }
  } catch (error) {
@@ -334,21 +357,46 @@ async function obtenerResultadosServidor() {
 }
 
 // ======================
-// LIMPIAR VISTA DE SUGERENCIAS (solo visual, no borra nada en el servidor)
+// CERRAR RANCHO Y REINICIAR (archiva el turno actual y empieza uno nuevo)
 // ======================
 if (btnLimpiar) {
- btnLimpiar.addEventListener('click', () => {
-   if (listaSugerencias) listaSugerencias.innerHTML = '';
-   if (cajaSugerencias) cajaSugerencias.style.display = 'none';
+ btnLimpiar.addEventListener('click', async () => {
+   const confirmar = confirm("¿Cerrar el rancho actual? Los votos y sugerencias de este turno se guardarán en el historial y comenzará un turno nuevo.");
+   if (!confirmar) return;
+
+   const textoOriginal = btnLimpiar.textContent;
+   btnLimpiar.disabled = true;
+   btnLimpiar.textContent = "Cerrando...";
+
+   try {
+     const resp = await fetch(WEB_APP_URL, {
+       method: 'POST',
+       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+       body: JSON.stringify({ accion: 'limpiar' })
+     });
+     let resultado = null;
+     try { resultado = await resp.json(); } catch (_) {}
+     if (resultado && resultado.success === false) {
+       throw new Error(resultado.error || 'El servidor rechazó la acción.');
+     }
+     alert("Rancho cerrado. Comenzó un nuevo turno.");
+     obtenerResultadosServidor();
+   } catch (error) {
+     console.error("Error al cerrar rancho:", error);
+     alert("No se pudo cerrar el rancho. Intenta nuevamente.");
+   } finally {
+     btnLimpiar.disabled = false;
+     btnLimpiar.textContent = textoOriginal;
+   }
  });
 }
 
 // ======================
-// BORRAR TODO EL HISTORIAL (acción destructiva contra el backend)
+// ELIMINAR HISTORIAL COMPLETO (acción destructiva e irreversible)
 // ======================
 if (btnBorrarTodo) {
  btnBorrarTodo.addEventListener('click', async () => {
-   const confirmar = confirm("¿Seguro que deseas borrar TODOS los votos y comentarios registrados? Esta acción no se puede deshacer.");
+   const confirmar = confirm("¿ELIMINAR PERMANENTEMENTE todo el historial y reiniciar el sistema? Esta acción no se puede deshacer.");
    if (!confirmar) return;
 
    const textoOriginal = btnBorrarTodo.textContent;
@@ -356,12 +404,17 @@ if (btnBorrarTodo) {
    btnBorrarTodo.textContent = "Borrando...";
 
    try {
-     await fetch(WEB_APP_URL, {
+     const resp = await fetch(WEB_APP_URL, {
        method: 'POST',
        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-       body: JSON.stringify({ accion: 'borrarTodo' })
+       body: JSON.stringify({ accion: 'borrar_todo_sistema' })
      });
-     alert("Historial borrado correctamente.");
+     let resultado = null;
+     try { resultado = await resp.json(); } catch (_) {}
+     if (resultado && resultado.success === false) {
+       throw new Error(resultado.error || 'El servidor rechazó la acción.');
+     }
+     alert("Historial eliminado correctamente.");
      obtenerResultadosServidor();
    } catch (error) {
      console.error("Error al borrar historial:", error);

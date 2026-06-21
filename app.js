@@ -5,6 +5,7 @@ const CONTRASEÑA_ADMIN = "canela2014";
 let votoSeleccionado = null;
 let currentMenuId = null;
 let yaVotoEnEsteTurno = false;
+let intentosVoto = 0;
 
 const vistaComensal = document.getElementById('vistaComensal');
 const vistaAdmin = document.getElementById('vistaAdmin');
@@ -12,20 +13,20 @@ const btnLike = document.getElementById('btnLike');
 const btnDislike = document.getElementById('btnDislike');
 const btnOmitir = document.getElementById('btnOmitir');
 const lblSeleccion = document.getElementById('lblSeleccion');
-const btnGuardar = document.getElementById('btnGuardar');
+let btnGuardar = document.getElementById('btnGuardar');
 const lnkAccesoAdmin = document.getElementById('lnkAccesoAdmin');
 const btnVolver = document.getElementById('btnVolver');
 const btnLimpiar = document.getElementById('btnLimpiar');
 const btnBorrarTodo = document.getElementById('btnBorrarTodo');
 const listaHistorial = document.getElementById('listaHistorial');
 
-const comentarioBox = document.getElementById('comentarioBox');
-const txtComentario = document.getElementById('txtComentario');
-const contadorPalabras = document.getElementById('contadorPalabras');
+let comentarioBox = document.getElementById('comentarioBox');
+let txtComentario = document.getElementById('txtComentario');
+let contadorPalabras = document.getElementById('contadorPalabras');
 const MAX_PALABRAS_COMENTARIO = 120;
 
 const cargandoInicial = document.getElementById('cargandoInicial');
-const contenidoVotacion = document.getElementById('contenidoVotacion');
+let contenidoVotacion = document.getElementById('contenidoVotacion');
 
 const cajaSugerencias = document.getElementById('cajaSugerencias');
 const listaSugerencias = document.getElementById('listaSugerencias');
@@ -39,14 +40,9 @@ const cantDislike = document.getElementById('cantDislike');
 const cantSkip = document.getElementById('cantSkip');
 const totalVotosTxt = document.getElementById('totalVotos');
 
-const botones = [
-    { elemento: btnLike, valor: 'Me gustó' },
-    { elemento: btnDislike, valor: 'No me gustó' },
-    { elemento: btnOmitir, valor: 'Omito comentario' }
-];
-
 let menuIdConocido = localStorage.getItem('menuIdConocido') || null;
 
+// Bloquear botón guardar inicialmente
 if (btnGuardar) {
     btnGuardar.disabled = true;
     btnGuardar.textContent = "Cargando...";
@@ -58,15 +54,23 @@ function escapeHtml(texto) {
     return div.innerHTML;
 }
 
-// FUNCIÓN PARA MOSTRAR MENSAJE DE YA VOTADO
-function mostrarQueYaVoto(intentos) {
+// FUNCIÓN PARA MOSTRAR MENSAJE DE "YA VOTASTE" (SOLO CUANDO INTENTA VOTAR)
+function mostrarMensajeYaVoto() {
     const tarjetaVotacion = document.querySelector('#vistaComensal .card');
     if (!tarjetaVotacion) return;
     
-    // OCULTAR TODO
+    // Incrementar contador de intentos
+    intentosVoto++;
+    
+    // Guardar en localStorage
+    const intentosKey = `intentos_${currentMenuId}`;
+    localStorage.setItem(intentosKey, intentosVoto.toString());
+    
+    // OCULTAR TODO EL CONTENIDO DE VOTACIÓN
     if (cargandoInicial) cargandoInicial.style.display = 'none';
     if (contenidoVotacion) contenidoVotacion.style.display = 'none';
     
+    // DESHABILITAR BOTÓN GUARDAR
     if (btnGuardar) {
         btnGuardar.disabled = true;
         btnGuardar.textContent = "Voto ya registrado";
@@ -74,12 +78,13 @@ function mostrarQueYaVoto(intentos) {
         btnGuardar.style.cursor = 'not-allowed';
     }
     
-    botones.forEach(item => {
-        if (item.elemento) {
-            item.elemento.style.display = 'none';
-        }
+    // OCULTAR BOTONES DE VOTO
+    const botones = [btnLike, btnDislike, btnOmitir];
+    botones.forEach(btn => {
+        if (btn) btn.style.display = 'none';
     });
     
+    // OCULTAR COMENTARIO
     if (comentarioBox) {
         comentarioBox.style.display = 'none';
     }
@@ -90,38 +95,38 @@ function mostrarQueYaVoto(intentos) {
     let subtexto = '';
     let contador = '';
     
-    if (intentos === 0) {
+    if (intentosVoto === 1) {
         mensaje = '¡Gracias por tu participación!';
         emoji = '🎉';
         color = '#fef08a';
         subtexto = 'Tu opinión sobre el menú de hoy ya ha sido registrada correctamente.';
-    } else if (intentos === 1) {
+    } else if (intentosVoto === 2) {
         mensaje = '¡Oye, ya votaste una vez!';
         emoji = '👀';
         color = '#fb923c';
         subtexto = 'No se permiten votos múltiples en el mismo turno. ¡Sé honesto! 🍽️';
-    } else if (intentos === 2) {
+    } else if (intentosVoto === 3) {
         mensaje = '¡Ya van DOS veces que intentas votar!';
         emoji = '😤';
         color = '#f87171';
         subtexto = 'El sistema ya registró tu voto. Por favor, no insistas.';
-    } else if (intentos === 3) {
+    } else if (intentosVoto === 4) {
         mensaje = '¡TRES VECES INTENTANDO VOTAR!';
         emoji = '🚨';
         color = '#ef4444';
         subtexto = 'Estás abusando del sistema. Tu voto ya fue contado.';
-    } else if (intentos >= 4) {
+    } else if (intentosVoto >= 5) {
         mensaje = '¡ACCESO BLOQUEADO!';
         emoji = '🔒';
         color = '#991b1b';
         subtexto = 'Has intentado votar demasiadas veces. Espera al próximo turno.';
     }
     
-    if (intentos > 0) {
+    if (intentosVoto > 1) {
         contador = `
             <div style="margin-top: 20px; padding: 12px; background: rgba(239, 68, 68, 0.1); border-radius: 12px; border: 1px solid rgba(239, 68, 68, 0.2);">
                 <span style="color: #fca5a5; font-size: 0.9rem;">
-                    ⚠️ Intento de voto múltiple #${intentos}
+                    ⚠️ Intento de voto múltiple #${intentosVoto - 1}
                 </span>
             </div>
         `;
@@ -141,17 +146,22 @@ function mostrarQueYaVoto(intentos) {
     `;
 }
 
-function habilitarEnvio(idMenu) {
-    currentMenuId = idMenu;
+// FUNCIÓN PARA HABILITAR LA VOTACIÓN (CUANDO NO HA VOTADO)
+function habilitarVotacion() {
+    // Mostrar contenido de votación
     if (cargandoInicial) cargandoInicial.style.display = 'none';
     if (contenidoVotacion) contenidoVotacion.style.display = 'block';
     
-    botones.forEach(item => {
-        if (item.elemento) {
-            item.elemento.style.display = 'flex';
+    // Mostrar botones de voto
+    const botones = [btnLike, btnDislike, btnOmitir];
+    botones.forEach(btn => {
+        if (btn) {
+            btn.style.display = 'flex';
+            btn.disabled = false;
         }
     });
     
+    // Habilitar botón guardar
     if (btnGuardar) {
         btnGuardar.disabled = false;
         btnGuardar.textContent = "Enviar Voto";
@@ -159,9 +169,20 @@ function habilitarEnvio(idMenu) {
         btnGuardar.style.cursor = 'pointer';
     }
     
+    // Ocultar comentario inicialmente
     if (comentarioBox) {
         comentarioBox.style.display = 'none';
     }
+    
+    // Limpiar selección anterior
+    votoSeleccionado = null;
+    if (lblSeleccion) lblSeleccion.textContent = 'Ninguna';
+    
+    // Remover clases active de botones
+    const botonesActivos = [btnLike, btnDislike, btnOmitir];
+    botonesActivos.forEach(btn => {
+        if (btn) btn.classList.remove('active');
+    });
 }
 
 async function verificarEstadoVoto() {
@@ -169,7 +190,8 @@ async function verificarEstadoVoto() {
 
     const timeoutRespaldo = setTimeout(() => {
         if (!verificacionCompletada) {
-            habilitarEnvio(menuIdConocido || "1");
+            currentMenuId = menuIdConocido || "1";
+            habilitarVotacion();
         }
     }, 3000);
 
@@ -188,139 +210,254 @@ async function verificarEstadoVoto() {
         console.log("=== DEBUG ===");
         console.log("Current Menu ID:", currentMenuId);
         console.log("Último menú votado:", ultimoMenuVotado);
-        console.log("¿Coinciden?", ultimoMenuVotado === currentMenuId);
+        console.log("¿Ya votó en este turno?", ultimoMenuVotado === currentMenuId);
         
         if (ultimoMenuVotado === currentMenuId) {
-            // YA VOTÓ - OBTENER O INCREMENTAR CONTADOR
+            // EL USUARIO YA VOTÓ EN ESTE TURNO
             yaVotoEnEsteTurno = true;
             
+            // Obtener contador de intentos
             const intentosKey = `intentos_${currentMenuId}`;
-            let intentos = parseInt(localStorage.getItem(intentosKey) || '0');
+            intentosVoto = parseInt(localStorage.getItem(intentosKey) || '0');
             
-            // *** CORRECCIÓN CRÍTICA ***
-            // Si es la PRIMERA VEZ que se muestra (intentos === 0), 
-            // mostrar mensaje de agradecimiento PERO incrementar a 1 para 
-            // que el próximo reintento muestre el mensaje de advertencia
-            if (intentos === 0) {
-                // Primera vez - mostrar agradecimiento
-                mostrarQueYaVoto(0);
-                // GUARDAR CONTADOR EN 1 para la próxima vez
-                localStorage.setItem(intentosKey, '1');
+            // Si es la primera vez que carga después de votar (intentos === 0)
+            if (intentosVoto === 0) {
+                // Mostrar mensaje de agradecimiento por primera vez
+                mostrarMensajeYaVoto();
             } else {
-                // Ya es un reintento - incrementar y mostrar advertencia
-                intentos++;
-                localStorage.setItem(intentosKey, intentos.toString());
-                mostrarQueYaVoto(intentos);
+                // Ya es un reintento - mostrar mensaje con contador actual
+                // Pero NO incrementar el contador automáticamente
+                // Solo mostrar el mensaje correspondiente al intento actual
+                const tarjetaVotacion = document.querySelector('#vistaComensal .card');
+                if (tarjetaVotacion) {
+                    // Ocultar todo
+                    if (cargandoInicial) cargandoInicial.style.display = 'none';
+                    if (contenidoVotacion) contenidoVotacion.style.display = 'none';
+                    
+                    if (btnGuardar) {
+                        btnGuardar.disabled = true;
+                        btnGuardar.textContent = "Voto ya registrado";
+                        btnGuardar.style.opacity = '0.5';
+                        btnGuardar.style.cursor = 'not-allowed';
+                    }
+                    
+                    const botones = [btnLike, btnDislike, btnOmitir];
+                    botones.forEach(btn => {
+                        if (btn) btn.style.display = 'none';
+                    });
+                    
+                    if (comentarioBox) {
+                        comentarioBox.style.display = 'none';
+                    }
+                    
+                    let mensaje = '';
+                    let emoji = '';
+                    let color = '';
+                    let subtexto = '';
+                    let contador = '';
+                    
+                    if (intentosVoto === 1) {
+                        mensaje = '¡Gracias por tu participación!';
+                        emoji = '🎉';
+                        color = '#fef08a';
+                        subtexto = 'Tu opinión sobre el menú de hoy ya ha sido registrada correctamente.';
+                    } else if (intentosVoto === 2) {
+                        mensaje = '¡Oye, ya votaste una vez!';
+                        emoji = '👀';
+                        color = '#fb923c';
+                        subtexto = 'No se permiten votos múltiples en el mismo turno. ¡Sé honesto! 🍽️';
+                    } else if (intentosVoto === 3) {
+                        mensaje = '¡Ya van DOS veces que intentas votar!';
+                        emoji = '😤';
+                        color = '#f87171';
+                        subtexto = 'El sistema ya registró tu voto. Por favor, no insistas.';
+                    } else if (intentosVoto === 4) {
+                        mensaje = '¡TRES VECES INTENTANDO VOTAR!';
+                        emoji = '🚨';
+                        color = '#ef4444';
+                        subtexto = 'Estás abusando del sistema. Tu voto ya fue contado.';
+                    } else if (intentosVoto >= 5) {
+                        mensaje = '¡ACCESO BLOQUEADO!';
+                        emoji = '🔒';
+                        color = '#991b1b';
+                        subtexto = 'Has intentado votar demasiadas veces. Espera al próximo turno.';
+                    }
+                    
+                    if (intentosVoto > 1) {
+                        contador = `
+                            <div style="margin-top: 20px; padding: 12px; background: rgba(239, 68, 68, 0.1); border-radius: 12px; border: 1px solid rgba(239, 68, 68, 0.2);">
+                                <span style="color: #fca5a5; font-size: 0.9rem;">
+                                    ⚠️ Intento de voto múltiple #${intentosVoto - 1}
+                                </span>
+                            </div>
+                        `;
+                    }
+                    
+                    tarjetaVotacion.innerHTML = `
+                        <div style="padding: 30px 0; text-align: center;">
+                            <h2 style="color: ${color}; font-size: 1.5rem; font-weight: 700;">${emoji} ${mensaje}</h2>
+                            <p style="color: #94a3b8; margin-top: 16px; font-size: 1rem; line-height: 1.6;">
+                                ${subtexto}
+                            </p>
+                            ${contador}
+                            <p style="color: #64748b; margin-top: 20px; font-size: 0.85rem;">
+                                Puedes cerrar esta ventana o recargar la página para continuar.
+                            </p>
+                        </div>
+                    `;
+                }
             }
         } else {
-            // NO HA VOTADO - Habilitar
+            // EL USUARIO NO HA VOTADO - Habilitar votación
             yaVotoEnEsteTurno = false;
             
-            // Limpiar contador de intentos del turno actual
+            // Limpiar contador de intentos
             const intentosKey = `intentos_${currentMenuId}`;
             if (localStorage.getItem(intentosKey)) {
                 localStorage.removeItem(intentosKey);
             }
+            intentosVoto = 0;
             
-            habilitarEnvio(currentMenuId);
+            // Restaurar la vista de votación
+            habilitarVotacion();
         }
     } catch (e) {
         console.error("Error al verificar estado del voto:", e);
         verificacionCompletada = true;
         clearTimeout(timeoutRespaldo);
-        habilitarEnvio(menuIdConocido || "1");
+        currentMenuId = menuIdConocido || "1";
+        habilitarVotacion();
     }
 }
 
 // EVENTOS DE LOS BOTONES DE VOTO
-botones.forEach(item => {
-    if (item.elemento) {
-        item.elemento.addEventListener('click', () => {
-            if (yaVotoEnEsteTurno || (btnGuardar && btnGuardar.disabled)) {
-                alert("Ya has votado en este turno. No puedes cambiar tu voto.");
+function configurarEventListeners() {
+    // Botones de voto
+    const botonesVoto = [
+        { elemento: btnLike, valor: 'Me gustó' },
+        { elemento: btnDislike, valor: 'No me gustó' },
+        { elemento: btnOmitir, valor: 'Omito comentario' }
+    ];
+    
+    botonesVoto.forEach(item => {
+        if (item.elemento) {
+            item.elemento.addEventListener('click', function() {
+                // VERIFICACIÓN CRÍTICA: Si ya votó, mostrar mensaje de advertencia
+                if (yaVotoEnEsteTurno) {
+                    // Incrementar contador de intentos
+                    const intentosKey = `intentos_${currentMenuId}`;
+                    let intentos = parseInt(localStorage.getItem(intentosKey) || '0');
+                    intentos++;
+                    localStorage.setItem(intentosKey, intentos.toString());
+                    intentosVoto = intentos;
+                    
+                    // Mostrar mensaje de "ya votaste"
+                    mostrarMensajeYaVoto();
+                    return;
+                }
+                
+                // Si no ha votado, seleccionar normalmente
+                votoSeleccionado = item.valor;
+                if (lblSeleccion) lblSeleccion.textContent = item.valor;
+                
+                // Remover active de todos
+                botonesVoto.forEach(b => {
+                    if (b.elemento) b.elemento.classList.remove('active');
+                });
+                item.elemento.classList.add('active');
+
+                // Mostrar/ocultar comentario
+                if (item.valor === 'Me gustó') {
+                    if (comentarioBox) comentarioBox.style.display = 'none';
+                    if (txtComentario) txtComentario.value = '';
+                    if (contadorPalabras) contadorPalabras.textContent = '0';
+                } else {
+                    if (comentarioBox) comentarioBox.style.display = 'block';
+                }
+            });
+        }
+    });
+    
+    // Contador de palabras
+    if (txtComentario) {
+        txtComentario.addEventListener('input', function() {
+            let palabras = this.value.trim().split(/\s+/).filter(Boolean);
+            if (palabras.length > MAX_PALABRAS_COMENTARIO) {
+                this.value = palabras.slice(0, MAX_PALABRAS_COMENTARIO).join(' ');
+                palabras = palabras.slice(0, MAX_PALABRAS_COMENTARIO);
+            }
+            if (contadorPalabras) {
+                contadorPalabras.textContent = palabras.length;
+                contadorPalabras.parentElement.classList.toggle('limite', palabras.length >= MAX_PALABRAS_COMENTARIO);
+            }
+        });
+    }
+    
+    // Botón guardar
+    if (btnGuardar) {
+        btnGuardar.addEventListener('click', async function() {
+            // VERIFICACIÓN CRÍTICA: Si ya votó, mostrar mensaje
+            if (yaVotoEnEsteTurno) {
+                // Incrementar contador de intentos
+                const intentosKey = `intentos_${currentMenuId}`;
+                let intentos = parseInt(localStorage.getItem(intentosKey) || '0');
+                intentos++;
+                localStorage.setItem(intentosKey, intentos.toString());
+                intentosVoto = intentos;
+                
+                // Mostrar mensaje de "ya votaste"
+                mostrarMensajeYaVoto();
                 return;
             }
             
-            votoSeleccionado = item.valor;
-            lblSeleccion.textContent = item.valor;
-            botones.forEach(b => b.elemento.classList.remove('active'));
-            item.elemento.classList.add('active');
+            if (!votoSeleccionado) { 
+                alert("Por favor, selecciona una opción."); 
+                return; 
+            }
+            
+            if (!currentMenuId) { 
+                currentMenuId = menuIdConocido || "1"; 
+            }
 
-            if (item.valor === 'Me gustó') {
-                comentarioBox.style.display = 'none';
-                if (txtComentario) txtComentario.value = '';
-                if (contadorPalabras) contadorPalabras.textContent = '0';
-            } else {
-                comentarioBox.style.display = 'block';
+            const comentarioTexto = (votoSeleccionado !== 'Me gustó' && txtComentario) ? txtComentario.value.trim() : '';
+
+            this.disabled = true;
+            this.textContent = "Enviando...";
+            
+            try {
+                await fetch(WEB_APP_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ 
+                        accion: 'votar', 
+                        opcion: votoSeleccionado, 
+                        comentario: comentarioTexto 
+                    })
+                });
+                
+                // Guardar que ya votó
+                localStorage.setItem('ultimoMenuVotado', currentMenuId);
+                yaVotoEnEsteTurno = true;
+                
+                // Inicializar contador de intentos en 1 (para mostrar agradecimiento)
+                const intentosKey = `intentos_${currentMenuId}`;
+                localStorage.setItem(intentosKey, '1');
+                intentosVoto = 1;
+                
+                alert("¡Tu opinión ha sido registrada!");
+                
+                // Mostrar mensaje de agradecimiento
+                mostrarMensajeYaVoto();
+                
+            } catch (error) {
+                console.error("Error al enviar voto:", error);
+                alert("Error de envío. Por favor, intenta nuevamente.");
+                this.disabled = false;
+                this.textContent = "Enviar Voto";
             }
         });
     }
-});
-
-// CONTADOR DE PALABRAS
-if (txtComentario) {
-    txtComentario.addEventListener('input', () => {
-        let palabras = txtComentario.value.trim().split(/\s+/).filter(Boolean);
-        if (palabras.length > MAX_PALABRAS_COMENTARIO) {
-            txtComentario.value = palabras.slice(0, MAX_PALABRAS_COMENTARIO).join(' ');
-            palabras = palabras.slice(0, MAX_PALABRAS_COMENTARIO);
-        }
-        contadorPalabras.textContent = palabras.length;
-        contadorPalabras.parentElement.classList.toggle('limite', palabras.length >= MAX_PALABRAS_COMENTARIO);
-    });
 }
-
-// EVENTO DEL BOTÓN GUARDAR
-btnGuardar.addEventListener('click', async () => {
-    if (yaVotoEnEsteTurno || btnGuardar.disabled) {
-        alert("Ya has votado en este turno. No se permiten votos múltiples.");
-        return;
-    }
-    
-    if (!votoSeleccionado) { 
-        alert("Por favor, selecciona una opción."); 
-        return; 
-    }
-    
-    if (!currentMenuId) { 
-        currentMenuId = menuIdConocido || "1"; 
-    }
-
-    const comentarioTexto = (votoSeleccionado !== 'Me gustó' && txtComentario) ? txtComentario.value.trim() : '';
-
-    btnGuardar.disabled = true;
-    btnGuardar.textContent = "Enviando...";
-    
-    try {
-        await fetch(WEB_APP_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({ 
-                accion: 'votar', 
-                opcion: votoSeleccionado, 
-                comentario: comentarioTexto 
-            })
-        });
-        
-        // GUARDAR EN LOCALSTORAGE QUE YA VOTÓ
-        localStorage.setItem('ultimoMenuVotado', currentMenuId);
-        
-        // INICIALIZAR CONTADOR DE INTENTOS EN 0 (se incrementará en el próximo reload)
-        const intentosKey = `intentos_${currentMenuId}`;
-        localStorage.setItem(intentosKey, '0');
-        
-        yaVotoEnEsteTurno = true;
-        
-        alert("¡Tu opinión ha sido registrada!");
-        window.location.reload();
-        
-    } catch (error) {
-        console.error("Error al enviar voto:", error);
-        alert("Error de envío. Por favor, intenta nuevamente.");
-        btnGuardar.disabled = false;
-        btnGuardar.textContent = "Enviar Voto";
-    }
-});
 
 // ACCESO ADMIN
 lnkAccesoAdmin.addEventListener('click', () => {
@@ -334,8 +471,12 @@ lnkAccesoAdmin.addEventListener('click', () => {
     }
 });
 
-btnVolver.addEventListener('click', () => { 
-    window.location.reload(); 
+// BOTÓN VOLVER DEL ADMIN
+btnVolver.addEventListener('click', () => {
+    vistaAdmin.style.display = 'none';
+    vistaComensal.style.display = 'block';
+    // Recargar el estado del voto
+    verificarEstadoVoto();
 });
 
 // OBTENER RESULTADOS
@@ -491,4 +632,6 @@ btnBorrarTodo.addEventListener('click', async () => {
     }
 });
 
+// CONFIGURAR EVENT LISTENERS Y INICIAR
+configurarEventListeners();
 verificarEstadoVoto();

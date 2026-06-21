@@ -175,9 +175,11 @@ if (txtComentario) {
 // ======================
 if (btnGuardar) {
  btnGuardar.addEventListener('click', async () => {
+   // Re-chequeo justo antes de enviar: bloquea doble click, doble pestaña, etc.
    const ultimoMenuVotado = localStorage.getItem('ultimoMenuVotado');
    if (ultimoMenuVotado === currentMenuId && currentMenuId !== null) {
      alert("Ya has votado en este turno. No se permiten votos múltiples.");
+     mostrarAgradecimiento();
      return;
    }
    
@@ -190,9 +192,10 @@ if (btnGuardar) {
    
    btnGuardar.disabled = true;
    btnGuardar.textContent = "Enviando...";
+   botones.forEach(b => { if (b.elemento) b.elemento.style.pointerEvents = 'none'; });
    
    try {
-     await fetch(WEB_APP_URL, {
+     const respuestaGuardar = await fetch(WEB_APP_URL, {
        method: 'POST',
        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
        body: JSON.stringify({ 
@@ -201,19 +204,25 @@ if (btnGuardar) {
          comentario: comentarioTexto 
        })
      });
-     
-     if (currentMenuId) {
-       localStorage.setItem('ultimoMenuVotado', currentMenuId);
-     } else {
-       localStorage.setItem('ultimoMenuVotado', "1");
+
+     // Si el backend responde con JSON indicando error explícito, no marcamos el voto como hecho
+     let resultado = null;
+     try { resultado = await respuestaGuardar.json(); } catch (_) { /* backend puede no devolver JSON */ }
+     if (resultado && resultado.success === false) {
+       throw new Error(resultado.error || 'El servidor rechazó el voto.');
      }
+     
+     // Solo al confirmar el envío marcamos este turno como votado
+     localStorage.setItem('ultimoMenuVotado', currentMenuId || "1");
      
      alert("¡Tu opinión ha sido registrada!");
      window.location.reload();
    } catch (error) {
+     console.error("Error al guardar voto:", error);
      alert("Error de envío. Por favor, intenta nuevamente.");
      btnGuardar.disabled = false;
      btnGuardar.textContent = "Enviar Voto";
+     botones.forEach(b => { if (b.elemento) b.elemento.style.pointerEvents = 'auto'; });
    }
  });
 }
@@ -261,11 +270,110 @@ async function obtenerResultadosServidor() {
    if (cantDislike) cantDislike.textContent = vDislike;
    if (cantSkip) cantSkip.textContent = vSkip;
    if (totalVotosTxt) totalVotosTxt.textContent = total;
+
+   // Porcentajes y gráfico de torta (CSS conic-gradient, sin librerías)
+   const pLike = total > 0 ? (vLike / total) * 100 : 0;
+   const pDislike = total > 0 ? (vDislike / total) * 100 : 0;
+   const pSkip = total > 0 ? (vSkip / total) * 100 : 0;
+
+   if (pctLike) pctLike.textContent = `${pLike.toFixed(1)}%`;
+   if (pctDislike) pctDislike.textContent = `${pDislike.toFixed(1)}%`;
+   if (pctSkip) pctSkip.textContent = `${pSkip.toFixed(1)}%`;
+
+   if (tortaNativa) {
+     const colorLike = '#4ade80';
+     const colorDislike = '#f87171';
+     const colorSkip = '#94a3b8';
+     tortaNativa.style.background = total > 0
+       ? `conic-gradient(${colorLike} 0% ${pLike}%, ${colorDislike} ${pLike}% ${pLike + pDislike}%, ${colorSkip} ${pLike + pDislike}% 100%)`
+       : '#334155';
+   }
    
    const sugerenciasTurno = datos.sugerencias || [];
-   if (sugerenciasTurno.length > 0 && cajaSugerencias && listaSugerencias) {
-     cajaSugerencias.style.display = 'block';
-     listaSugerencias.innerHTML = sugerenciasTurno.map(s => `
-       <div class="suggestion-item">
-         <span class="suggestion-tag ${s.opcion === 'No me gustó' ? 'dislike' : 'skip'}">
-           ${s.opcion === 'No me gustó' ? '👎' : '💬'}
+
+   // Caja de sugerencias destacadas (comentarios del turno actual)
+   if (cajaSugerencias && listaSugerencias) {
+     if (sugerenciasTurno.length > 0) {
+       cajaSugerencias.style.display = 'block';
+       listaSugerencias.innerHTML = sugerenciasTurno.map(s => `
+         <div class="suggestion-item">
+           <span class="suggestion-tag ${s.opcion === 'No me gustó' ? 'dislike' : 'skip'}">
+             ${s.opcion === 'No me gustó' ? '👎' : '💬'}
+           </span>
+           <p class="suggestion-text">${escapeHtml(s.comentario || '(sin comentario)')}</p>
+         </div>
+       `).join('');
+     } else {
+       cajaSugerencias.style.display = 'none';
+       listaSugerencias.innerHTML = '';
+     }
+   }
+
+   // Historial completo
+   if (listaHistorial) {
+     if (sugerenciasTurno.length > 0) {
+       listaHistorial.innerHTML = sugerenciasTurno.map(s => `
+         <div class="suggestion-item">
+           <span class="suggestion-tag ${s.opcion === 'No me gustó' ? 'dislike' : 'skip'}">
+             ${s.opcion === 'No me gustó' ? '👎' : '💬'}
+           </span>
+           <p class="suggestion-text">${escapeHtml(s.comentario || '(sin comentario)')}</p>
+           ${s.fecha ? `<span class="suggestion-date">${escapeHtml(String(s.fecha))}</span>` : ''}
+         </div>
+       `).join('');
+     } else {
+       listaHistorial.innerHTML = `<p style="color:#94a3b8; font-size:0.9rem; text-align:center;">Sin comentarios registrados en este turno.</p>`;
+     }
+   }
+ } catch (error) {
+   console.error("Error al obtener resultados:", error);
+   if (listaHistorial) {
+     listaHistorial.innerHTML = `<p style="color:#f87171; font-size:0.9rem; text-align:center;">No se pudieron cargar los resultados. Intenta nuevamente.</p>`;
+   }
+ }
+}
+
+// ======================
+// LIMPIAR VISTA DE SUGERENCIAS (solo visual, no borra nada en el servidor)
+// ======================
+if (btnLimpiar) {
+ btnLimpiar.addEventListener('click', () => {
+   if (listaSugerencias) listaSugerencias.innerHTML = '';
+   if (cajaSugerencias) cajaSugerencias.style.display = 'none';
+ });
+}
+
+// ======================
+// BORRAR TODO EL HISTORIAL (acción destructiva contra el backend)
+// ======================
+if (btnBorrarTodo) {
+ btnBorrarTodo.addEventListener('click', async () => {
+   const confirmar = confirm("¿Seguro que deseas borrar TODOS los votos y comentarios registrados? Esta acción no se puede deshacer.");
+   if (!confirmar) return;
+
+   const textoOriginal = btnBorrarTodo.textContent;
+   btnBorrarTodo.disabled = true;
+   btnBorrarTodo.textContent = "Borrando...";
+
+   try {
+     await fetch(WEB_APP_URL, {
+       method: 'POST',
+       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+       body: JSON.stringify({ accion: 'borrarTodo' })
+     });
+     alert("Historial borrado correctamente.");
+     obtenerResultadosServidor();
+   } catch (error) {
+     console.error("Error al borrar historial:", error);
+     alert("No se pudo borrar el historial. Intenta nuevamente.");
+   } finally {
+     btnBorrarTodo.disabled = false;
+     btnBorrarTodo.textContent = textoOriginal;
+   }
+ });
+}
+
+// ======================
+// INICIO: se ejecuta al cargar el script
+// ======================
+verificarEstadoVoto();

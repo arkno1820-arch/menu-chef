@@ -88,31 +88,26 @@ async function verificarEstadoVoto() {
    const ultimoMenuVotado = localStorage.getItem('ultimoMenuVotado');
    
    if (ultimoMenuVotado === currentMenuId) {
-     // YA VOTÓ → ocultar votación y mostrar agradecimiento
      mostrarAgradecimiento();
    } else {
-     // NO HA VOTADO → mostrar votación
      if (contenidoVotacion) contenidoVotacion.style.display = 'block';
      if (btnGuardar) btnGuardar.style.display = 'block';
      
-     // Restablecer selección
      votoSeleccionado = null;
-     lblSeleccion.textContent = 'Ninguna';
-     botones.forEach(b => b.elemento.classList.remove('active'));
-     comentarioBox.style.display = 'none';
+     if (lblSeleccion) lblSeleccion.textContent = 'Ninguna';
+     botones.forEach(b => { if (b.elemento) b.elemento.classList.remove('active'); });
+     if (comentarioBox) comentarioBox.style.display = 'none';
      if (txtComentario) txtComentario.value = '';
      if (contadorPalabras) contadorPalabras.textContent = '0';
    }
  } catch (e) {
    console.error("Error al verificar estado del voto:", e);
    
-   // SEGURIDAD ANTI-FRAUDE: Si falla el servidor, leemos el localStorage de respaldo
+   // CONTROL ANTI-FRAUDE LOCAL (Si falla el servidor de Google)
    const ultimoMenuVotado = localStorage.getItem('ultimoMenuVotado');
    if (ultimoMenuVotado) {
-     // Si hay rastros de un voto anterior en el equipo, lo bloqueamos de inmediato por seguridad
      mostrarAgradecimiento();
    } else {
-     // Si está completamente limpio, habilitamos la vista por defecto
      if (contenidoVotacion) contenidoVotacion.style.display = 'block';
      if (btnGuardar) btnGuardar.style.display = 'block';
    }
@@ -120,37 +115,35 @@ async function verificarEstadoVoto() {
 }
 
 // ======================
-// EVENTOS DE LOS BOTONES DE VOTO (con verificación de voto previo)
+// EVENTOS DE LOS BOTONES DE VOTO
 // ======================
 botones.forEach(item => {
  if (item.elemento) {
    item.elemento.addEventListener('click', () => {
-     // Verificar si ya votó en este turno
      const ultimoMenuVotado = localStorage.getItem('ultimoMenuVotado');
-     if (ultimoMenuVotado === currentMenuId) {
+     if (ultimoMenuVotado === currentMenuId && currentMenuId !== null) {
        alert("Ya has votado en este turno. No puedes cambiar tu voto.");
        return;
      }
      
      votoSeleccionado = item.valor;
-     lblSeleccion.textContent = item.valor;
-     botones.forEach(b => b.elemento.classList.remove('active'));
+     if (lblSeleccion) lblSeleccion.textContent = item.valor;
+     botones.forEach(b => { if (b.elemento) b.elemento.classList.remove('active'); });
      item.elemento.classList.add('active');
      
-     // Mostrar/ocultar comentario según opción
      if (item.valor === 'Me gustó') {
-       comentarioBox.style.display = 'none';
+       if (comentarioBox) comentarioBox.style.display = 'none';
        if (txtComentario) txtComentario.value = '';
        if (contadorPalabras) contadorPalabras.textContent = '0';
      } else {
-       comentarioBox.style.display = 'block';
+       if (comentarioBox) comentarioBox.style.display = 'block';
      }
    });
  }
 });
 
 // ======================
-// CONTADOR DE PALABRAS (para el comentario)
+// CONTADOR DE PALABRAS
 // ======================
 if (txtComentario) {
  txtComentario.addEventListener('input', () => {
@@ -159,80 +152,92 @@ if (txtComentario) {
      txtComentario.value = palabras.slice(0, MAX_PALABRAS_COMENTARIO).join(' ');
      palabras = palabras.slice(0, MAX_PALABRAS_COMENTARIO);
    }
-   contadorPalabras.textContent = palabras.length;
-   contadorPalabras.parentElement.classList.toggle('limite', palabras.length >= MAX_PALABRAS_COMENTARIO);
+   if (contadorPalabras) {
+     contadorPalabras.textContent = palabras.length;
+     contadorPalabras.parentElement.classList.toggle('limite', palabras.length >= MAX_PALABRAS_COMENTARIO);
+   }
  });
 }
 
 // ======================
-// BOTÓN GUARDAR (con verificación de voto previo)
+// BOTÓN GUARDAR VOTO
 // ======================
-btnGuardar.addEventListener('click', async () => {
- // Verificar si ya votó
- const ultimoMenuVotado = localStorage.getItem('ultimoMenuVotado');
- if (ultimoMenuVotado === currentMenuId) {
-   alert("Ya has votado en este turno. No se permiten votos múltiples.");
-   return;
- }
- 
- if (!votoSeleccionado) {
-   alert("Por favor, selecciona una opción.");
-   return;
- }
- 
- // El comentario solo se envía si NO es "Me gustó"
- const comentarioTexto = (votoSeleccionado !== 'Me gustó' && txtComentario) ? txtComentario.value.trim() : '';
- 
- btnGuardar.disabled = true;
- btnGuardar.textContent = "Enviando...";
- 
- try {
-   await fetch(WEB_APP_URL, {
-     method: 'POST',
-     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-     body: JSON.stringify({ 
-       accion: 'votar', 
-       opcion: votoSeleccionado, 
-       comentario: comentarioTexto 
-     })
-   });
+if (btnGuardar) {
+ btnGuardar.addEventListener('click', async () => {
+   const ultimoMenuVotado = localStorage.getItem('ultimoMenuVotado');
+   if (ultimoMenuVotado === currentMenuId && currentMenuId !== null) {
+     alert("Ya has votado en este turno. No se permiten votos múltiples.");
+     return;
+   }
    
-   localStorage.setItem('ultimoMenuVotado', currentMenuId);
-   alert(" ¡Tu opinión ha sido registrada!");
+   if (!votoSeleccionado) {
+     alert("Por favor, selecciona una opción.");
+     return;
+   }
    
-   // Recargar para mostrar el agradecimiento de forma limpia
-   window.location.reload();
- } catch (error) {
-   alert("Error de envío. Por favor, intenta nuevamente.");
-   btnGuardar.disabled = false;
-   btnGuardar.textContent = "Enviar Voto";
- }
-});
+   const comentarioTexto = (votoSeleccionado !== 'Me gustó' && txtComentario) ? txtComentario.value.trim() : '';
+   
+   btnGuardar.disabled = true;
+   btnGuardar.textContent = "Enviando...";
+   
+   try {
+     await fetch(WEB_APP_URL, {
+       method: 'POST',
+       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+       body: JSON.stringify({ 
+         accion: 'votar', 
+         opcion: votoSeleccionado, 
+         comentario: comentarioTexto 
+       })
+     });
+     
+     if (currentMenuId) {
+       localStorage.setItem('ultimoMenuVotado', currentMenuId);
+     } else {
+       localStorage.setItem('ultimoMenuVotado', "1");
+     }
+     
+     alert("¡Tu opinión ha sido registrada!");
+     window.location.reload();
+   } catch (error) {
+     alert("Error de envío. Por favor, intenta nuevamente.");
+     btnGuardar.disabled = false;
+     btnGuardar.textContent = "Enviar Voto";
+   }
+ });
+}
 
 // ======================
 // ACCESO ADMINISTRADOR
 // ======================
-lnkAccesoAdmin.addEventListener('click', () => {
- const clave = prompt("Introduce la contraseña:");
- if (clave === CONTRASEÑA_ADMIN) {
-   vistaComensal.style.display = 'none';
-   vistaAdmin.style.display = 'block';
-   obtenerResultadosServidor();
- } else if (clave !== null) {
-   alert("Incorrecta.");
- }
-});
+if (lnkAccesoAdmin) {
+ lnkAccesoAdmin.addEventListener('click', () => {
+   const clave = prompt("Introduce la contraseña:");
+   if (clave === CONTRASEÑA_ADMIN) {
+     if (vistaComensal) vistaComensal.style.display = 'none';
+     if (vistaAdmin) vistaAdmin.style.display = 'block';
+     obtenerResultadosServidor();
+   } else if (clave !== null) {
+     alert("Incorrecta.");
+   }
+ });
+}
 
-btnVolver.addEventListener('click', () => {
- window.location.reload();
-});
+if (btnVolver) {
+ btnVolver.addEventListener('click', () => {
+   window.location.reload();
+ });
+}
 
 // ======================
 // OBTENER RESULTADOS (Panel Admin)
 // ======================
 async function obtenerResultadosServidor() {
  try {
-   listaHistorial.innerHTML = `<p style="color:#94a3b8; font-size:0.9rem; text-align:center;">Cargando historial...</p>`;
+   if (listaHistorial) {
+     listaHistorial.innerHTML = `<p style="color:#94a3b8; font-size:0.9rem; text-align:center;">Cargando historial...</p>`;
+   }
+   
    const respuesta = await fetch(`${WEB_APP_URL}?accion=leer`);
    const datos = await respuesta.json();
    
@@ -241,33 +246,31 @@ async function obtenerResultadosServidor() {
    const vSkip = datos['Omito comentario'] || 0;
    const total = vLike + vDislike + vSkip;
    
-   cantLike.textContent = vLike;
-   cantDislike.textContent = vDislike;
-   cantSkip.textContent = vSkip;
-   totalVotosTxt.textContent = total;
+   if (cantLike) cantLike.textContent = vLike;
+   if (cantDislike) cantDislike.textContent = vDislike;
+   if (cantSkip) cantSkip.textContent = vSkip;
+   if (totalVotosTxt) totalVotosTxt.textContent = total;
    
-   // Sugerencias del turno actual
    const sugerenciasTurno = datos.sugerencias || [];
-   if (sugerenciasTurno.length > 0) {
+   if (sugerenciasTurno.length > 0 && cajaSugerencias && listaSugerencias) {
      cajaSugerencias.style.display = 'block';
      listaSugerencias.innerHTML = sugerenciasTurno.map(s => `
        <div class="suggestion-item">
-         <span class="suggestion-tag ${s.opcion === 'No me gustó' ? 'dislike' : 'skip'}"></span>
+         <span class="suggestion-tag ${s.opcion === 'No me gustó' ? 'dislike' : 'skip'}">
+           ${s.opcion === 'No me gustó' ? '👎' : '💬'}
+         </span>
          ${escapeHtml(s.texto)}
        </div>
      `).join('');
-   } else {
+   } else if (cajaSugerencias) {
      cajaSugerencias.style.display = 'none';
      listaSugerencias.innerHTML = '';
    }
    
-   // Gráfico de torta
-   if (total === 0) {
-     tortaNativa.style.background = '#475569';
-     pctLike.textContent = '0%';
-     pctDislike.textContent = '0%';
-     pctSkip.textContent = '0%';
-   } else {
-     const pLike = Math.round((vLike / total) * 100);
-     const pDislike = Math.round((vDislike / total) * 100);
-     const pSkip = Math.round((vSkip / total) * 100);
+   if (tortaNativa) {
+     if (total === 0) {
+       tortaNativa.style.background = '#475569';
+       if (pctLike) pctLike.textContent = '0%';
+       if (pctDislike) pctDislike.textContent = '0%';
+       if (pctSkip) pctSkip.textContent = '0%';
+     } else {

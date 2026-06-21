@@ -42,7 +42,6 @@ const totalVotosTxt = document.getElementById('totalVotos');
 
 let menuIdConocido = localStorage.getItem('menuIdConocido') || null;
 
-// Bloquear botón guardar inicialmente
 if (btnGuardar) {
     btnGuardar.disabled = true;
     btnGuardar.textContent = "Cargando...";
@@ -54,23 +53,19 @@ function escapeHtml(texto) {
     return div.innerHTML;
 }
 
-// FUNCIÓN PARA MOSTRAR MENSAJE DE "YA VOTASTE" (SOLO CUANDO INTENTA VOTAR)
-function mostrarMensajeYaVoto() {
-    const tarjetaVotacion = document.querySelector('#vistaComensal .card');
-    if (!tarjetaVotacion) return;
-    
-    // Incrementar contador de intentos
-    intentosVoto++;
-    
-    // Guardar en localStorage
-    const intentosKey = `intentos_${currentMenuId}`;
-    localStorage.setItem(intentosKey, intentosVoto.toString());
-    
-    // OCULTAR TODO EL CONTENIDO DE VOTACIÓN
+// FUNCIÓN PARA DESHABILITAR COMPLETAMENTE LA VOTACIÓN
+function deshabilitarVotacion() {
     if (cargandoInicial) cargandoInicial.style.display = 'none';
     if (contenidoVotacion) contenidoVotacion.style.display = 'none';
     
-    // DESHABILITAR BOTÓN GUARDAR
+    const botones = [btnLike, btnDislike, btnOmitir];
+    botones.forEach(btn => {
+        if (btn) {
+            btn.style.display = 'none';
+            btn.disabled = true;
+        }
+    });
+    
     if (btnGuardar) {
         btnGuardar.disabled = true;
         btnGuardar.textContent = "Voto ya registrado";
@@ -78,58 +73,63 @@ function mostrarMensajeYaVoto() {
         btnGuardar.style.cursor = 'not-allowed';
     }
     
-    // OCULTAR BOTONES DE VOTO
-    const botones = [btnLike, btnDislike, btnOmitir];
-    botones.forEach(btn => {
-        if (btn) btn.style.display = 'none';
-    });
-    
-    // OCULTAR COMENTARIO
     if (comentarioBox) {
         comentarioBox.style.display = 'none';
     }
+}
+
+// FUNCIÓN PARA MOSTRAR MENSAJE DE AGRADECIMIENTO (PRIMERA VEZ)
+function mostrarAgradecimiento() {
+    const tarjetaVotacion = document.querySelector('#vistaComensal .card');
+    if (!tarjetaVotacion) return;
+    
+    deshabilitarVotacion();
+    
+    tarjetaVotacion.innerHTML = `
+        <div style="padding: 30px 0; text-align: center;">
+            <h2 style="color: #fef08a; font-size: 1.5rem; font-weight: 700;">🎉 ¡Gracias por tu participación!</h2>
+            <p style="color: #94a3b8; margin-top: 16px; font-size: 1rem; line-height: 1.6;">
+                Tu opinión sobre el menú de hoy ya ha sido registrada correctamente.
+            </p>
+            <p style="color: #64748b; margin-top: 20px; font-size: 0.85rem;">
+                Puedes cerrar esta ventana o recargar la página para continuar.
+            </p>
+        </div>
+    `;
+}
+
+// FUNCIÓN PARA MOSTRAR MENSAJE DE REINTENTO (2DA, 3RA, ETC VEZ)
+function mostrarReintento(intentos) {
+    const tarjetaVotacion = document.querySelector('#vistaComensal .card');
+    if (!tarjetaVotacion) return;
+    
+    deshabilitarVotacion();
     
     let mensaje = '';
     let emoji = '';
     let color = '';
     let subtexto = '';
-    let contador = '';
     
-    if (intentosVoto === 1) {
-        mensaje = '¡Gracias por tu participación!';
-        emoji = '🎉';
-        color = '#fef08a';
-        subtexto = 'Tu opinión sobre el menú de hoy ya ha sido registrada correctamente.';
-    } else if (intentosVoto === 2) {
+    if (intentos === 1) {
         mensaje = '¡Oye, ya votaste una vez!';
         emoji = '👀';
         color = '#fb923c';
         subtexto = 'No se permiten votos múltiples en el mismo turno. ¡Sé honesto! 🍽️';
-    } else if (intentosVoto === 3) {
+    } else if (intentos === 2) {
         mensaje = '¡Ya van DOS veces que intentas votar!';
         emoji = '😤';
         color = '#f87171';
         subtexto = 'El sistema ya registró tu voto. Por favor, no insistas.';
-    } else if (intentosVoto === 4) {
+    } else if (intentos === 3) {
         mensaje = '¡TRES VECES INTENTANDO VOTAR!';
         emoji = '🚨';
         color = '#ef4444';
         subtexto = 'Estás abusando del sistema. Tu voto ya fue contado.';
-    } else if (intentosVoto >= 5) {
+    } else if (intentos >= 4) {
         mensaje = '¡ACCESO BLOQUEADO!';
         emoji = '🔒';
         color = '#991b1b';
         subtexto = 'Has intentado votar demasiadas veces. Espera al próximo turno.';
-    }
-    
-    if (intentosVoto > 1) {
-        contador = `
-            <div style="margin-top: 20px; padding: 12px; background: rgba(239, 68, 68, 0.1); border-radius: 12px; border: 1px solid rgba(239, 68, 68, 0.2);">
-                <span style="color: #fca5a5; font-size: 0.9rem;">
-                    ⚠️ Intento de voto múltiple #${intentosVoto - 1}
-                </span>
-            </div>
-        `;
     }
     
     tarjetaVotacion.innerHTML = `
@@ -138,7 +138,11 @@ function mostrarMensajeYaVoto() {
             <p style="color: #94a3b8; margin-top: 16px; font-size: 1rem; line-height: 1.6;">
                 ${subtexto}
             </p>
-            ${contador}
+            <div style="margin-top: 20px; padding: 12px; background: rgba(239, 68, 68, 0.1); border-radius: 12px; border: 1px solid rgba(239, 68, 68, 0.2);">
+                <span style="color: #fca5a5; font-size: 0.9rem;">
+                    ⚠️ Intento de voto múltiple #${intentos}
+                </span>
+            </div>
             <p style="color: #64748b; margin-top: 20px; font-size: 0.85rem;">
                 Puedes cerrar esta ventana o recargar la página para continuar.
             </p>
@@ -146,13 +150,25 @@ function mostrarMensajeYaVoto() {
     `;
 }
 
+// FUNCIÓN PARA MOSTRAR EL MENSAJE CORRECTO SEGÚN EL ESTADO
+function mostrarMensajeSegunEstado() {
+    const intentosKey = `intentos_${currentMenuId}`;
+    const intentos = parseInt(localStorage.getItem(intentosKey) || '0');
+    
+    if (intentos === 0) {
+        // Primera vez que ve el mensaje después de votar
+        mostrarAgradecimiento();
+    } else {
+        // Ya es un reintento
+        mostrarReintento(intentos);
+    }
+}
+
 // FUNCIÓN PARA HABILITAR LA VOTACIÓN (CUANDO NO HA VOTADO)
 function habilitarVotacion() {
-    // Mostrar contenido de votación
     if (cargandoInicial) cargandoInicial.style.display = 'none';
     if (contenidoVotacion) contenidoVotacion.style.display = 'block';
     
-    // Mostrar botones de voto
     const botones = [btnLike, btnDislike, btnOmitir];
     botones.forEach(btn => {
         if (btn) {
@@ -161,7 +177,6 @@ function habilitarVotacion() {
         }
     });
     
-    // Habilitar botón guardar
     if (btnGuardar) {
         btnGuardar.disabled = false;
         btnGuardar.textContent = "Enviar Voto";
@@ -169,16 +184,13 @@ function habilitarVotacion() {
         btnGuardar.style.cursor = 'pointer';
     }
     
-    // Ocultar comentario inicialmente
     if (comentarioBox) {
         comentarioBox.style.display = 'none';
     }
     
-    // Limpiar selección anterior
     votoSeleccionado = null;
     if (lblSeleccion) lblSeleccion.textContent = 'Ninguna';
     
-    // Remover clases active de botones
     const botonesActivos = [btnLike, btnDislike, btnOmitir];
     botonesActivos.forEach(btn => {
         if (btn) btn.classList.remove('active');
@@ -213,100 +225,15 @@ async function verificarEstadoVoto() {
         console.log("¿Ya votó en este turno?", ultimoMenuVotado === currentMenuId);
         
         if (ultimoMenuVotado === currentMenuId) {
-            // EL USUARIO YA VOTÓ EN ESTE TURNO
+            // EL USUARIO YA VOTÓ - Deshabilitar y mostrar mensaje
             yaVotoEnEsteTurno = true;
             
-            // Obtener contador de intentos
-            const intentosKey = `intentos_${currentMenuId}`;
-            intentosVoto = parseInt(localStorage.getItem(intentosKey) || '0');
+            // Deshabilitar todo
+            deshabilitarVotacion();
             
-            // Si es la primera vez que carga después de votar (intentos === 0)
-            if (intentosVoto === 0) {
-                // Mostrar mensaje de agradecimiento por primera vez
-                mostrarMensajeYaVoto();
-            } else {
-                // Ya es un reintento - mostrar mensaje con contador actual
-                // Pero NO incrementar el contador automáticamente
-                // Solo mostrar el mensaje correspondiente al intento actual
-                const tarjetaVotacion = document.querySelector('#vistaComensal .card');
-                if (tarjetaVotacion) {
-                    // Ocultar todo
-                    if (cargandoInicial) cargandoInicial.style.display = 'none';
-                    if (contenidoVotacion) contenidoVotacion.style.display = 'none';
-                    
-                    if (btnGuardar) {
-                        btnGuardar.disabled = true;
-                        btnGuardar.textContent = "Voto ya registrado";
-                        btnGuardar.style.opacity = '0.5';
-                        btnGuardar.style.cursor = 'not-allowed';
-                    }
-                    
-                    const botones = [btnLike, btnDislike, btnOmitir];
-                    botones.forEach(btn => {
-                        if (btn) btn.style.display = 'none';
-                    });
-                    
-                    if (comentarioBox) {
-                        comentarioBox.style.display = 'none';
-                    }
-                    
-                    let mensaje = '';
-                    let emoji = '';
-                    let color = '';
-                    let subtexto = '';
-                    let contador = '';
-                    
-                    if (intentosVoto === 1) {
-                        mensaje = '¡Gracias por tu participación!';
-                        emoji = '🎉';
-                        color = '#fef08a';
-                        subtexto = 'Tu opinión sobre el menú de hoy ya ha sido registrada correctamente.';
-                    } else if (intentosVoto === 2) {
-                        mensaje = '¡Oye, ya votaste una vez!';
-                        emoji = '👀';
-                        color = '#fb923c';
-                        subtexto = 'No se permiten votos múltiples en el mismo turno. ¡Sé honesto! 🍽️';
-                    } else if (intentosVoto === 3) {
-                        mensaje = '¡Ya van DOS veces que intentas votar!';
-                        emoji = '😤';
-                        color = '#f87171';
-                        subtexto = 'El sistema ya registró tu voto. Por favor, no insistas.';
-                    } else if (intentosVoto === 4) {
-                        mensaje = '¡TRES VECES INTENTANDO VOTAR!';
-                        emoji = '🚨';
-                        color = '#ef4444';
-                        subtexto = 'Estás abusando del sistema. Tu voto ya fue contado.';
-                    } else if (intentosVoto >= 5) {
-                        mensaje = '¡ACCESO BLOQUEADO!';
-                        emoji = '🔒';
-                        color = '#991b1b';
-                        subtexto = 'Has intentado votar demasiadas veces. Espera al próximo turno.';
-                    }
-                    
-                    if (intentosVoto > 1) {
-                        contador = `
-                            <div style="margin-top: 20px; padding: 12px; background: rgba(239, 68, 68, 0.1); border-radius: 12px; border: 1px solid rgba(239, 68, 68, 0.2);">
-                                <span style="color: #fca5a5; font-size: 0.9rem;">
-                                    ⚠️ Intento de voto múltiple #${intentosVoto - 1}
-                                </span>
-                            </div>
-                        `;
-                    }
-                    
-                    tarjetaVotacion.innerHTML = `
-                        <div style="padding: 30px 0; text-align: center;">
-                            <h2 style="color: ${color}; font-size: 1.5rem; font-weight: 700;">${emoji} ${mensaje}</h2>
-                            <p style="color: #94a3b8; margin-top: 16px; font-size: 1rem; line-height: 1.6;">
-                                ${subtexto}
-                            </p>
-                            ${contador}
-                            <p style="color: #64748b; margin-top: 20px; font-size: 0.85rem;">
-                                Puedes cerrar esta ventana o recargar la página para continuar.
-                            </p>
-                        </div>
-                    `;
-                }
-            }
+            // Mostrar el mensaje correcto según el estado
+            mostrarMensajeSegunEstado();
+            
         } else {
             // EL USUARIO NO HA VOTADO - Habilitar votación
             yaVotoEnEsteTurno = false;
@@ -318,7 +245,6 @@ async function verificarEstadoVoto() {
             }
             intentosVoto = 0;
             
-            // Restaurar la vista de votación
             habilitarVotacion();
         }
     } catch (e) {
@@ -330,9 +256,17 @@ async function verificarEstadoVoto() {
     }
 }
 
+// FUNCIÓN PARA INCREMENTAR CONTADOR DE INTENTOS
+function incrementarIntentos() {
+    const intentosKey = `intentos_${currentMenuId}`;
+    let intentos = parseInt(localStorage.getItem(intentosKey) || '0');
+    intentos++;
+    localStorage.setItem(intentosKey, intentos.toString());
+    return intentos;
+}
+
 // EVENTOS DE LOS BOTONES DE VOTO
 function configurarEventListeners() {
-    // Botones de voto
     const botonesVoto = [
         { elemento: btnLike, valor: 'Me gustó' },
         { elemento: btnDislike, valor: 'No me gustó' },
@@ -342,17 +276,11 @@ function configurarEventListeners() {
     botonesVoto.forEach(item => {
         if (item.elemento) {
             item.elemento.addEventListener('click', function() {
-                // VERIFICACIÓN CRÍTICA: Si ya votó, mostrar mensaje de advertencia
+                // Si ya votó, incrementar contador y mostrar mensaje
                 if (yaVotoEnEsteTurno) {
-                    // Incrementar contador de intentos
-                    const intentosKey = `intentos_${currentMenuId}`;
-                    let intentos = parseInt(localStorage.getItem(intentosKey) || '0');
-                    intentos++;
-                    localStorage.setItem(intentosKey, intentos.toString());
-                    intentosVoto = intentos;
-                    
-                    // Mostrar mensaje de "ya votaste"
-                    mostrarMensajeYaVoto();
+                    const intentos = incrementarIntentos();
+                    deshabilitarVotacion();
+                    mostrarReintento(intentos);
                     return;
                 }
                 
@@ -360,13 +288,11 @@ function configurarEventListeners() {
                 votoSeleccionado = item.valor;
                 if (lblSeleccion) lblSeleccion.textContent = item.valor;
                 
-                // Remover active de todos
                 botonesVoto.forEach(b => {
                     if (b.elemento) b.elemento.classList.remove('active');
                 });
                 item.elemento.classList.add('active');
 
-                // Mostrar/ocultar comentario
                 if (item.valor === 'Me gustó') {
                     if (comentarioBox) comentarioBox.style.display = 'none';
                     if (txtComentario) txtComentario.value = '';
@@ -378,7 +304,6 @@ function configurarEventListeners() {
         }
     });
     
-    // Contador de palabras
     if (txtComentario) {
         txtComentario.addEventListener('input', function() {
             let palabras = this.value.trim().split(/\s+/).filter(Boolean);
@@ -393,20 +318,13 @@ function configurarEventListeners() {
         });
     }
     
-    // Botón guardar
     if (btnGuardar) {
         btnGuardar.addEventListener('click', async function() {
-            // VERIFICACIÓN CRÍTICA: Si ya votó, mostrar mensaje
+            // Si ya votó, incrementar contador y mostrar mensaje
             if (yaVotoEnEsteTurno) {
-                // Incrementar contador de intentos
-                const intentosKey = `intentos_${currentMenuId}`;
-                let intentos = parseInt(localStorage.getItem(intentosKey) || '0');
-                intentos++;
-                localStorage.setItem(intentosKey, intentos.toString());
-                intentosVoto = intentos;
-                
-                // Mostrar mensaje de "ya votaste"
-                mostrarMensajeYaVoto();
+                const intentos = incrementarIntentos();
+                deshabilitarVotacion();
+                mostrarReintento(intentos);
                 return;
             }
             
@@ -439,15 +357,15 @@ function configurarEventListeners() {
                 localStorage.setItem('ultimoMenuVotado', currentMenuId);
                 yaVotoEnEsteTurno = true;
                 
-                // Inicializar contador de intentos en 1 (para mostrar agradecimiento)
+                // Inicializar contador de intentos en 0 (para mostrar agradecimiento)
                 const intentosKey = `intentos_${currentMenuId}`;
-                localStorage.setItem(intentosKey, '1');
-                intentosVoto = 1;
+                localStorage.setItem(intentosKey, '0');
                 
                 alert("¡Tu opinión ha sido registrada!");
                 
-                // Mostrar mensaje de agradecimiento
-                mostrarMensajeYaVoto();
+                // Deshabilitar todo y mostrar agradecimiento
+                deshabilitarVotacion();
+                mostrarAgradecimiento();
                 
             } catch (error) {
                 console.error("Error al enviar voto:", error);
@@ -475,7 +393,6 @@ lnkAccesoAdmin.addEventListener('click', () => {
 btnVolver.addEventListener('click', () => {
     vistaAdmin.style.display = 'none';
     vistaComensal.style.display = 'block';
-    // Recargar el estado del voto
     verificarEstadoVoto();
 });
 

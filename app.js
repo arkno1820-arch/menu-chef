@@ -90,59 +90,29 @@ function mostrarAgradecimiento() {
                 Tu opinión sobre el menú de hoy ya ha sido registrada correctamente.
             </p>
             <p style="color: #64748b; margin-top: 20px; font-size: 0.85rem;">
-                Puedes cerrar esta ventana o recargar la página para continuar.
+                Tu participación ha quedado registrada para este turno.
             </p>
         </div>
     `;
 }
 
-// FUNCIÓN PARA MOSTRAR ADVERTENCIA DE REINTENTO
-function mostrarAdvertenciaReintento(intentos) {
+// FUNCIÓN PARA MOSTRAR ADVERTENCIA DE SEGUNDO VOTO (SIN CONTADOR)
+function mostrarAdvertenciaReintento() {
     const tarjetaVotacion = document.querySelector('#vistaComensal .card');
     if (!tarjetaVotacion) return;
-    
+
     deshabilitarVotacion();
-    
-    let mensaje = '';
-    let emoji = '';
-    let color = '';
-    let subtexto = '';
-    
-    if (intentos === 1) {
-        mensaje = '¡Oye, ya votaste una vez!';
-        emoji = '👀';
-        color = '#fb923c';
-        subtexto = 'No se permiten votos múltiples en el mismo turno. ¡Sé honesto! 🍽️';
-    } else if (intentos === 2) {
-        mensaje = '¡Ya van DOS veces que intentas votar!';
-        emoji = '😤';
-        color = '#f87171';
-        subtexto = 'El sistema ya registró tu voto. Por favor, no insistas.';
-    } else if (intentos === 3) {
-        mensaje = '¡TRES VECES INTENTANDO VOTAR!';
-        emoji = '🚨';
-        color = '#ef4444';
-        subtexto = 'Estás abusando del sistema. Tu voto ya fue contado.';
-    } else if (intentos >= 4) {
-        mensaje = '¡ACCESO BLOQUEADO!';
-        emoji = '🔒';
-        color = '#991b1b';
-        subtexto = 'Has intentado votar demasiadas veces. Espera al próximo turno.';
-    }
-    
+
     tarjetaVotacion.innerHTML = `
-        <div style="padding: 30px 0; text-align: center;">
-            <h2 style="color: ${color}; font-size: 1.5rem; font-weight: 700;">${emoji} ${mensaje}</h2>
-            <p style="color: #94a3b8; margin-top: 16px; font-size: 1rem; line-height: 1.6;">
-                ${subtexto}
+        <div style="padding:30px 0;text-align:center;">
+            <h2 style="color:#ef4444; font-size:1.5rem; font-weight:700;">
+                🚫 Segundo voto no permitido
+            </h2>
+            <p style="color:#cbd5e1; margin-top:16px; font-size:1rem; line-height:1.6;">
+                Ya registraste tu participación en este turno.
             </p>
-            <div style="margin-top: 20px; padding: 12px; background: rgba(239, 68, 68, 0.1); border-radius: 12px; border: 1px solid rgba(239, 68, 68, 0.2);">
-                <span style="color: #fca5a5; font-size: 0.9rem;">
-                    ⚠️ Intento de voto múltiple #${intentos}
-                </span>
-            </div>
-            <p style="color: #64748b; margin-top: 20px; font-size: 0.85rem;">
-                Puedes cerrar esta ventana o recargar la página para continuar.
+            <p style="color:#fca5a5; margin-top:16px; font-size:0.95rem;">
+                No está permitido emitir un segundo voto por turno.
             </p>
         </div>
     `;
@@ -194,14 +164,7 @@ async function verificarEstadoVoto() {
         if (!verificacionCompletada) {
             currentMenuId = menuIdConocido || "1";
             if (usuarioYaVoto()) {
-                // Ya votó - mostrar mensaje
-                const intentosKey = `intentos_${currentMenuId}`;
-                const intentos = parseInt(localStorage.getItem(intentosKey) || '0');
-                if (intentos === 0) {
-                    mostrarAgradecimiento();
-                } else {
-                    mostrarAdvertenciaReintento(intentos);
-                }
+                mostrarAdvertenciaReintento();
             } else {
                 habilitarVotacion();
             }
@@ -224,26 +187,13 @@ async function verificarEstadoVoto() {
         console.log("¿Ya votó en este turno?", usuarioYaVoto());
         
         if (usuarioYaVoto()) {
-            // EL USUARIO YA VOTÓ - Deshabilitar y mostrar mensaje
-            const intentosKey = `intentos_${currentMenuId}`;
-            const intentos = parseInt(localStorage.getItem(intentosKey) || '0');
-            
-            deshabilitarVotacion();
-            
-            if (intentos === 0) {
-                mostrarAgradecimiento();
-            } else {
-                mostrarAdvertenciaReintento(intentos);
-            }
-            
+            mostrarAdvertenciaReintento();
         } else {
-            // EL USUARIO NO HA VOTADO - Habilitar votación
-            // Limpiar contador de intentos
+            // Limpiar cualquier resto de contador
             const intentosKey = `intentos_${currentMenuId}`;
             if (localStorage.getItem(intentosKey)) {
                 localStorage.removeItem(intentosKey);
             }
-            
             habilitarVotacion();
         }
     } catch (e) {
@@ -252,27 +202,16 @@ async function verificarEstadoVoto() {
         clearTimeout(timeoutRespaldo);
         currentMenuId = menuIdConocido || "1";
         if (usuarioYaVoto()) {
-            deshabilitarVotacion();
-            const intentosKey = `intentos_${currentMenuId}`;
-            const intentos = parseInt(localStorage.getItem(intentosKey) || '0');
-            if (intentos === 0) {
-                mostrarAgradecimiento();
-            } else {
-                mostrarAdvertenciaReintento(intentos);
-            }
+            mostrarAdvertenciaReintento();
         } else {
             habilitarVotacion();
         }
     }
 }
 
-// FUNCIÓN PARA INCREMENTAR CONTADOR DE INTENTOS
+// FUNCIÓN SIMPLIFICADA (ya no se usa realmente)
 function incrementarIntentos() {
-    const intentosKey = `intentos_${currentMenuId}`;
-    let intentos = parseInt(localStorage.getItem(intentosKey) || '0');
-    intentos++;
-    localStorage.setItem(intentosKey, intentos.toString());
-    return intentos;
+    return 1;
 }
 
 // EVENTOS DE LOS BOTONES DE VOTO
@@ -286,11 +225,9 @@ function configurarEventListeners() {
     botonesVoto.forEach(item => {
         if (item.elemento) {
             item.elemento.addEventListener('click', function() {
-                // VERIFICACIÓN CRÍTICA: Si ya votó, NO permitir selección
+                // BLOQUEO DIRECTO: si ya votó, muestra advertencia y sale
                 if (usuarioYaVoto()) {
-                    const intentos = incrementarIntentos();
-                    deshabilitarVotacion();
-                    mostrarAdvertenciaReintento(intentos);
+                    mostrarAdvertenciaReintento();
                     return;
                 }
                 
@@ -330,11 +267,9 @@ function configurarEventListeners() {
     
     if (btnGuardar) {
         btnGuardar.addEventListener('click', async function() {
-            // VERIFICACIÓN CRÍTICA: Si ya votó, NO permitir enviar
+            // BLOQUEO DIRECTO: si ya votó, muestra advertencia y sale
             if (usuarioYaVoto()) {
-                const intentos = incrementarIntentos();
-                deshabilitarVotacion();
-                mostrarAdvertenciaReintento(intentos);
+                mostrarAdvertenciaReintento();
                 return;
             }
             
@@ -366,11 +301,11 @@ function configurarEventListeners() {
                 // GUARDAR EN LOCALSTORAGE QUE YA VOTÓ
                 localStorage.setItem('ultimoMenuVotado', currentMenuId);
                 
-                // INICIALIZAR CONTADOR DE INTENTOS EN 0
+                // Ya no necesitamos contador, pero lo dejamos por compatibilidad
                 const intentosKey = `intentos_${currentMenuId}`;
-                localStorage.setItem(intentosKey, '0');
+                localStorage.removeItem(intentosKey);
                 
-                alert("¡Tu opinión ha sido registrada!");
+                alert("🎉 Gracias por participar. Tu voto fue registrado correctamente.");
                 
                 // Deshabilitar todo y mostrar agradecimiento
                 deshabilitarVotacion();
@@ -503,6 +438,7 @@ btnLimpiar.addEventListener('click', async () => {
             });
             alert("Turno archivado con éxito.");
             localStorage.removeItem('ultimoMenuVotado');
+            // Limpiar cualquier contador residual
             const keys = Object.keys(localStorage);
             keys.forEach(key => {
                 if (key.startsWith('intentos_')) {

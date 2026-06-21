@@ -14,23 +14,28 @@
         <div id="vistaComensal">
             <h1>Evaluación del Rancho Naval</h1>
             <div class="card">
-                <h2>¿Qué te pareció el menú de hoy?</h2>
-                <div class="button-group">
-                    <button class="btn btn-like" id="btnLike" ontouchstart="">👍 Me gustó</button>
-                    <button class="btn btn-dislike" id="btnDislike" ontouchstart="">👎 No me gustó</button>
-                    <button class="btn btn-skip" id="btnOmitir" ontouchstart="">🤫 Omito comentario</button>
+                <div id="cargandoInicial" style="padding: 30px 0; text-align:center;">
+                    <p style="color:#94a3b8; font-size:0.95rem;">Cargando menú del día...</p>
                 </div>
-                <div class="status-selection">
-                    Selección actual: <span id="lblSeleccion" class="badge">Ninguna</span>
-                </div>
+                <div id="contenidoVotacion" style="display:none;">
+                    <h2>¿Qué te pareció el menú de hoy?</h2>
+                    <div class="button-group">
+                        <button class="btn btn-like" id="btnLike" ontouchstart="">👍 Me gustó</button>
+                        <button class="btn btn-dislike" id="btnDislike" ontouchstart="">👎 No me gustó</button>
+                        <button class="btn btn-skip" id="btnOmitir" ontouchstart="">🤫 Omito comentario</button>
+                    </div>
+                    <div class="status-selection">
+                        Selección actual: <span id="lblSeleccion" class="badge">Ninguna</span>
+                    </div>
 
-                <div class="comment-box" id="comentarioBox" style="display:none;">
-                    <label for="txtComentario">¿Qué cambiarías para que fuera un "Me gustó"?</label>
-                    <textarea id="txtComentario" placeholder="Cuéntanos qué mejorarías del menú..." rows="4"></textarea>
-                    <div class="word-counter"><span id="contadorPalabras">0</span>/120 palabras (máximo)</div>
-                </div>
+                    <div class="comment-box" id="comentarioBox" style="display:none;">
+                        <label for="txtComentario">¿Qué cambiarías para que fuera un "Me gustó"?</label>
+                        <textarea id="txtComentario" placeholder="Cuéntanos qué mejorarías del menú..." rows="4"></textarea>
+                        <div class="word-counter"><span id="contadorPalabras">0</span>/120 palabras (máximo)</div>
+                    </div>
 
-                <button class="btn btn-submit" id="btnGuardar" ontouchstart="">Enviar Voto</button>
+                    <button class="btn btn-submit" id="btnGuardar" ontouchstart="">Enviar Voto</button>
+                </div>
             </div>
             
             <div class="footer-container">

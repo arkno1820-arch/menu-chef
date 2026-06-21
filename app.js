@@ -1,5 +1,5 @@
 // CONFIGURACIÓN CENTRAL ENLAZADA DE FORMA TRANSPARENTE
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxE7Mcj3mRKbzYuft89yr2E6VAj-OA9VdUyl2XmMOax8VItxh7nZM6bO2hFhc129TE-/exec"; 
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwfX9YLv3UwcR4ZmIHxyL2Oh1fkqH_z6mNrvBlfI5ZWxBa9teYjwEwJgTH31FI2fBrJsg/exec"; 
 const CONTRASEÑA_ADMIN = "canela2014"; 
 
 let votoSeleccionado = null;
@@ -23,6 +23,10 @@ const comentarioBox = document.getElementById('comentarioBox');
 const txtComentario = document.getElementById('txtComentario');
 const contadorPalabras = document.getElementById('contadorPalabras');
 const MAX_PALABRAS_COMENTARIO = 120;
+
+// Pantalla de carga inicial y contenedor de la votación (oculto hasta confirmar el estado del voto)
+const cargandoInicial = document.getElementById('cargandoInicial');
+const contenidoVotacion = document.getElementById('contenidoVotacion');
 
 // Elementos del panel de sugerencias del administrador
 const cajaSugerencias = document.getElementById('cajaSugerencias');
@@ -81,9 +85,12 @@ function mostrarPantallaAgradecimiento() {
 }
 
 // Habilita el botón de envío con el mejor ID de menú disponible (real o de respaldo),
-// para que el comensal nunca quede esperando indefinidamente.
+// y recién aquí se revela el contenido de votación (evita el "flash" de los botones
+// antes de confirmar si el comensal ya votó, que era la causa del loop reportado).
 function habilitarEnvio(idMenu) {
     currentMenuId = idMenu;
+    if (cargandoInicial) cargandoInicial.style.display = 'none';
+    if (contenidoVotacion) contenidoVotacion.style.display = 'block';
     if (btnGuardar) {
         btnGuardar.disabled = false;
         btnGuardar.textContent = "Enviar Voto";

@@ -43,9 +43,11 @@ const botones = [
     { elemento: btnOmitir, valor: 'Omito comentario' }
 ];
 
-// Bloqueado hasta confirmar (vía verificarEstadoVoto) que este dispositivo no ha votado ya en el turno actual.
-// Esto evita el "doble voto": si el comensal alcanza a votar antes de que cargue el ID del menú vigente,
-// el bloqueo por localStorage podía fallar y dejaba votar otra vez con otra opción.
+// Último menuId que se logró confirmar con el servidor, guardado localmente como respaldo
+// para cuando la señal en el rancho falle o demore (esto evita dejar al comensal bloqueado).
+let menuIdConocido = localStorage.getItem('menuIdConocido') || null;
+
+// Bloqueado solo brevemente mientras se intenta confirmar el menú vigente con el servidor.
 if (btnGuardar) {
     btnGuardar.disabled = true;
     btnGuardar.textContent = "Cargando...";
@@ -78,28 +80,49 @@ function mostrarPantallaAgradecimiento() {
     }
 }
 
+// Habilita el botón de envío con el mejor ID de menú disponible (real o de respaldo),
+// para que el comensal nunca quede esperando indefinidamente.
+function habilitarEnvio(idMenu) {
+    currentMenuId = idMenu;
+    if (btnGuardar) {
+        btnGuardar.disabled = false;
+        btnGuardar.textContent = "Enviar Voto";
+    }
+}
+
 async function verificarEstadoVoto() {
+    let verificacionCompletada = false;
+
+    // Salvaguarda: si la señal del rancho está mala y el servidor no responde a tiempo,
+    // no dejamos al comensal esperando — se habilita el voto igual a los 3 segundos.
+    const timeoutRespaldo = setTimeout(() => {
+        if (!verificacionCompletada) {
+            habilitarEnvio(menuIdConocido || "1");
+        }
+    }, 3000);
+
     try {
         const respuesta = await fetch(`${WEB_APP_URL}?accion=leer`);
         const datos = await respuesta.json();
-        currentMenuId = datos.menuId || "1";
-        const ultimoMenuVotado = localStorage.getItem('ultimoMenuVotado');
+        verificacionCompletada = true;
+        clearTimeout(timeoutRespaldo);
 
+        currentMenuId = datos.menuId || "1";
+        menuIdConocido = currentMenuId;
+        localStorage.setItem('menuIdConocido', currentMenuId);
+
+        const ultimoMenuVotado = localStorage.getItem('ultimoMenuVotado');
         if (ultimoMenuVotado === currentMenuId) {
             mostrarPantallaAgradecimiento();
-        } else if (btnGuardar) {
-            // Recién aquí, ya confirmado el ID de menú vigente, se habilita el envío del voto
-            btnGuardar.disabled = false;
-            btnGuardar.textContent = "Enviar Voto";
+        } else {
+            habilitarEnvio(currentMenuId);
         }
     } catch (e) {
         console.error("Error al verificar estado del voto:", e);
-        // Si la verificación falla por un problema de red, no dejamos al comensal bloqueado:
-        // se habilita el botón igualmente (el bloqueo de doble voto es una capa de cortesía, no de seguridad).
-        if (btnGuardar) {
-            btnGuardar.disabled = false;
-            btnGuardar.textContent = "Enviar Voto";
-        }
+        verificacionCompletada = true;
+        clearTimeout(timeoutRespaldo);
+        // Sin conexión confiable: se permite votar igual usando el último ID de menú conocido
+        habilitarEnvio(menuIdConocido || "1");
     }
 }
 
@@ -138,7 +161,7 @@ if (txtComentario) {
 
 btnGuardar.addEventListener('click', async () => {
     if (!votoSeleccionado) { alert("Por favor, selecciona una opción."); return; }
-    if (!currentMenuId) { alert("Aún estamos cargando los datos del rancho. Espera un momento e inténtalo de nuevo."); return; }
+    if (!currentMenuId) { currentMenuId = menuIdConocido || "1"; } // resguardo silencioso, nunca bloquea al comensal
 
     // El comentario de mejora solo se envía si corresponde a un voto distinto de "Me gustó"
     const comentarioTexto = (votoSeleccionado !== 'Me gustó' && txtComentario) ? txtComentario.value.trim() : '';

@@ -64,29 +64,23 @@ function escapeHtml(texto) {
     return div.innerHTML;
 }
 
-// Pantalla mostrada cuando el comensal ya votó en el turno actual. Incluye un botón de
-// retroceso al menú principal, con el mismo estilo que el botón "Volver" del panel del chef.
+// Pantalla mostrada cuando el comensal ya votó en el turno actual.
+// Ya NO incluye botón de volver para evitar el ciclo de recarga
 function mostrarPantallaAgradecimiento() {
     const tarjetaVotacion = document.querySelector('#vistaComensal .card');
     if (!tarjetaVotacion) return;
     
     tarjetaVotacion.innerHTML = `
-        <div style="padding: 20px 0; text-align: center;">
-            <h2 style="color: #fef08a; font-size: 1.4rem; font-weight: 700;">¡Gracias por tu participación! 🎉</h2>
-            <p style="color: #94a3b8; margin-top: 12px; font-size: 0.95rem;">
+        <div style="padding: 30px 0; text-align: center;">
+            <h2 style="color: #fef08a; font-size: 1.5rem; font-weight: 700;">¡Gracias por tu participación! 🎉</h2>
+            <p style="color: #94a3b8; margin-top: 16px; font-size: 1rem; line-height: 1.6;">
                 Tu opinión sobre el menú de hoy ya ha sido registrada correctamente.
             </p>
-            <button class="btn-back" id="btnVolverInicio" style="margin-top: 20px;">⬅️ Volver al Menú Principal</button>
+            <p style="color: #64748b; margin-top: 20px; font-size: 0.85rem;">
+                Puedes cerrar esta ventana o recargar la página para continuar.
+            </p>
         </div>
     `;
-    
-    const btnVolverInicio = document.getElementById('btnVolverInicio');
-    if (btnVolverInicio) {
-        btnVolverInicio.addEventListener('click', function(e) {
-            e.preventDefault();
-            window.location.reload();
-        });
-    }
 }
 
 // Habilita el botón de envío con el mejor ID de menú disponible (real o de respaldo),

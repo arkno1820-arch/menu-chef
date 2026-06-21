@@ -18,16 +18,10 @@ const btnLimpiar = document.getElementById('btnLimpiar');
 const btnBorrarTodo = document.getElementById('btnBorrarTodo');
 const listaHistorial = document.getElementById('listaHistorial');
 
-// Elementos del espacio de comentario/sugerencia del comensal
-const comentarioBox = document.getElementById('comentarioBox');
-const txtComentario = document.getElementById('txtComentario');
-const contadorPalabras = document.getElementById('contadorPalabras');
-const MAX_PALABRAS_COMENTARIO = 120;
+// Contenedor de votación (para ocultarlo cuando ya votó)
+const contenidoVotacion = document.getElementById('contenidoVotacion');
 
-// Elementos del panel de sugerencias del administrador
-const cajaSugerencias = document.getElementById('cajaSugerencias');
-const listaSugerencias = document.getElementById('listaSugerencias');
-
+// Elementos del panel de administrador
 const tortaNativa = document.getElementById('tortaNativa');
 const pctLike = document.getElementById('pctLike');
 const pctDislike = document.getElementById('pctDislike');
@@ -37,28 +31,18 @@ const cantDislike = document.getElementById('cantDislike');
 const cantSkip = document.getElementById('cantSkip');
 const totalVotosTxt = document.getElementById('totalVotos');
 
-// Contenedor de votación (para ocultarlo cuando ya votó)
-const contenidoVotacion = document.getElementById('contenidoVotacion');
-
 const botones = [
     { elemento: btnLike, valor: 'Me gustó' },
     { elemento: btnDislike, valor: 'No me gustó' },
     { elemento: btnOmitir, valor: 'Omito comentario' }
 ];
 
-// Evita que un comentario del comensal pueda inyectar HTML en el panel del administrador
-function escapeHtml(texto) {
-    const div = document.createElement('div');
-    div.textContent = texto;
-    return div.innerHTML;
-}
-
-// Función para mostrar el mensaje de agradecimiento y ocultar la votación
+// Función para mostrar mensaje de agradecimiento y ocultar votación
 function mostrarAgradecimiento() {
     const tarjetaVotacion = document.querySelector('#vistaComensal .card');
     if (!tarjetaVotacion) return;
 
-    // Ocultar completamente el contenido de votación
+    // Ocultar todo el contenido de votación (botones, comentario, etc.)
     if (contenidoVotacion) contenidoVotacion.style.display = 'none';
     if (btnGuardar) btnGuardar.style.display = 'none';
 
@@ -76,6 +60,7 @@ function mostrarAgradecimiento() {
     `;
 }
 
+// Verificar estado del voto al cargar la página
 async function verificarEstadoVoto() {
     try {
         const respuesta = await fetch(`${WEB_APP_URL}?accion=leer`);
@@ -90,6 +75,10 @@ async function verificarEstadoVoto() {
             // NO HA VOTADO → mostrar votación
             if (contenidoVotacion) contenidoVotacion.style.display = 'block';
             if (btnGuardar) btnGuardar.style.display = 'block';
+            // Restablecer selección
+            votoSeleccionado = null;
+            lblSeleccion.textContent = 'Ninguna';
+            botones.forEach(b => b.elemento.classList.remove('active'));
         }
     } catch (e) {
         console.error("Error al verificar estado del voto:", e);
@@ -99,11 +88,11 @@ async function verificarEstadoVoto() {
     }
 }
 
-// Eventos de los botones de voto
+// Eventos de los botones de voto (con verificación de voto previo)
 botones.forEach(item => {
     if (item.elemento) {
         item.elemento.addEventListener('click', () => {
-            // Si ya votó, no permitir selección
+            // Verificar si ya votó en este turno
             const ultimoMenuVotado = localStorage.getItem('ultimoMenuVotado');
             if (ultimoMenuVotado === currentMenuId) {
                 alert("Ya has votado en este turno. No puedes cambiar tu voto.");
@@ -114,34 +103,13 @@ botones.forEach(item => {
             lblSeleccion.textContent = item.valor;
             botones.forEach(b => b.elemento.classList.remove('active'));
             item.elemento.classList.add('active');
-
-            if (item.valor === 'Me gustó') {
-                comentarioBox.style.display = 'none';
-                if (txtComentario) txtComentario.value = '';
-                if (contadorPalabras) contadorPalabras.textContent = '0';
-            } else {
-                comentarioBox.style.display = 'block';
-            }
         });
     }
 });
 
-// Contador de palabras
-if (txtComentario) {
-    txtComentario.addEventListener('input', () => {
-        let palabras = txtComentario.value.trim().split(/\s+/).filter(Boolean);
-        if (palabras.length > MAX_PALABRAS_COMENTARIO) {
-            txtComentario.value = palabras.slice(0, MAX_PALABRAS_COMENTARIO).join(' ');
-            palabras = palabras.slice(0, MAX_PALABRAS_COMENTARIO);
-        }
-        contadorPalabras.textContent = palabras.length;
-        contadorPalabras.parentElement.classList.toggle('limite', palabras.length >= MAX_PALABRAS_COMENTARIO);
-    });
-}
-
-// Botón Guardar
+// Botón Guardar (con verificación de voto previo)
 btnGuardar.addEventListener('click', async () => {
-    // Verificar nuevamente si ya votó (por seguridad)
+    // Verificar si ya votó
     const ultimoMenuVotado = localStorage.getItem('ultimoMenuVotado');
     if (ultimoMenuVotado === currentMenuId) {
         alert("Ya has votado en este turno. No se permiten votos múltiples.");
@@ -153,15 +121,13 @@ btnGuardar.addEventListener('click', async () => {
         return;
     }
 
-    const comentarioTexto = (votoSeleccionado !== 'Me gustó' && txtComentario) ? txtComentario.value.trim() : '';
-
     btnGuardar.disabled = true;
     btnGuardar.textContent = "Enviando...";
     try {
         await fetch(WEB_APP_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({ accion: 'votar', opcion: votoSeleccionado, comentario: comentarioTexto })
+            body: JSON.stringify({ accion: 'votar', opcion: votoSeleccionado })
         });
         localStorage.setItem('ultimoMenuVotado', currentMenuId);
         alert("🎉 ¡Tu opinión ha sido registrada!");
@@ -190,7 +156,7 @@ btnVolver.addEventListener('click', () => {
     window.location.reload();
 });
 
-// Obtener resultados del servidor
+// Obtener resultados del servidor (panel admin)
 async function obtenerResultadosServidor() {
     try {
         listaHistorial.innerHTML = `<p style="color:#94a3b8; font-size:0.9rem; text-align:center;">Cargando historial...</p>`;
@@ -207,20 +173,6 @@ async function obtenerResultadosServidor() {
         cantDislike.textContent = vDislike;
         cantSkip.textContent = vSkip;
         totalVotosTxt.textContent = total;
-
-        const sugerenciasTurno = datos.sugerencias || [];
-        if (sugerenciasTurno.length > 0) {
-            cajaSugerencias.style.display = 'block';
-            listaSugerencias.innerHTML = sugerenciasTurno.map(s => `
-                <div class="suggestion-item">
-                    <span class="suggestion-tag ${s.opcion === 'No me gustó' ? 'dislike' : 'skip'}">${s.opcion === 'No me gustó' ? '👎' : '🤫'}</span>
-                    ${escapeHtml(s.texto)}
-                </div>
-            `).join('');
-        } else {
-            cajaSugerencias.style.display = 'none';
-            listaSugerencias.innerHTML = '';
-        }
 
         if (total === 0) {
             tortaNativa.style.background = '#475569';
@@ -252,14 +204,6 @@ async function obtenerResultadosServidor() {
             div.style.borderBottom = "1px solid rgba(255,255,255,0.05)";
             div.style.paddingBottom = "10px";
 
-            const sugerenciasDelTurno = turno.sugerencias || [];
-            const sugerenciasHtml = sugerenciasDelTurno.length > 0 ? `
-                <div class="suggestion-item" style="margin-top:8px; padding-top:8px; border-top:1px dashed rgba(255,255,255,0.08);">
-                    <strong style="color:#fef08a; font-size:0.8rem;">💡 Sugerencias:</strong>
-                    ${sugerenciasDelTurno.map(s => `<div style="margin-top:4px;">${s.opcion === 'No me gustó' ? '👎' : '🤫'} ${escapeHtml(s.texto)}</div>`).join('')}
-                </div>
-            ` : '';
-
             div.innerHTML = `
                 <div class="history-date" style="color:#cbd5e1; font-size:0.88rem; font-weight:600; margin-bottom:4px;">Turno #${historial.length - index} — ${turno.fecha}</div>
                 <div class="history-stats" style="display:flex; gap:12px; color:#94a3b8; font-size:0.85rem;">
@@ -268,7 +212,6 @@ async function obtenerResultadosServidor() {
                     <span>🤫 ${turno['Omito comentario']}</span>
                     <span style="font-weight:bold; color:#fef08a; margin-left:auto;">Total: ${turno.total}</span>
                 </div>
-                ${sugerenciasHtml}
             `;
             listaHistorial.appendChild(div);
         });
@@ -279,7 +222,7 @@ async function obtenerResultadosServidor() {
     }
 }
 
-// Cerrar turno
+// Cerrar turno (limpia localStorage y archiva)
 btnLimpiar.addEventListener('click', async () => {
     if (confirm("¿Cerrar el turno actual? Los votos pasarán al historial histórico.")) {
         btnLimpiar.disabled = true;
@@ -333,5 +276,5 @@ btnBorrarTodo.addEventListener('click', async () => {
     }
 });
 
-// Iniciar
+// Iniciar la aplicación
 verificarEstadoVoto();

@@ -74,14 +74,27 @@ function detectarNavegadorInterno() {
     return true;
   }
   
-  // 3. Detección en iOS: Si no es el navegador nativo (Safari) ni Chrome/Firefox/Edge de iOS,
-  // y se abre desde un visor interno (no tiene "Safari" en el UA o no es standalone)
+  // 3. Detección en iOS (WKWebView de lectores QR y otras aplicaciones)
   const isIOS = /iPhone|iPad|iPod/i.test(ua);
   if (isIOS) {
-    const isSafari = /Safari/i.test(ua) && !/CriOS/i.test(ua) && !/FxiOS/i.test(ua) && !/EdgiOS/i.test(ua);
-    const isCommonIOSBrowser = /CriOS|FxiOS|EdgiOS|OptiOS/i.test(ua);
+    // Si tiene webkit.messageHandlers inyectado por la app (excluyendo PWAs legítimas)
+    if (window.webkit && window.webkit.messageHandlers && !window.navigator.standalone) {
+      return true;
+    }
     
-    if (!isSafari && !isCommonIOSBrowser) {
+    const isSafari = /Safari/i.test(ua) && /Version/i.test(ua);
+    const isChrome = /CriOS/i.test(ua);
+    const isFirefox = /FxiOS/i.test(ua);
+    const isEdge = /EdgiOS/i.test(ua);
+    
+    // Si no es ninguno de los navegadores legítimos aprobados, es un WebView interno
+    if (!isSafari && !isChrome && !isFirefox && !isEdge) {
+      return true;
+    }
+    
+    // Si es un WebView que intentó falsear el UA imitando a Safari, 
+    // usualmente no tendrá definida la propiedad standalone en window.navigator
+    if (typeof window.navigator.standalone === 'undefined') {
       return true;
     }
   }

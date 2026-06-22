@@ -115,8 +115,20 @@ function manejarNavegadorInterno() {
     const intentUrl = `intent://${urlWithoutProtocol}#Intent;scheme=https;action=android.intent.action.VIEW;end`;
     window.location.href = intentUrl;
   } else if (isIOS) {
-    // Mostrar overlay en el DOM cuando esté listo
-    document.addEventListener("DOMContentLoaded", () => {
+    // Ocultar la vista de votación inmediatamente para que no puedan interactuar en el WebView
+    const ocultarVotacion = () => {
+      const vistaC = document.getElementById('vistaComensal');
+      if (vistaC) vistaC.style.display = 'none';
+    };
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", ocultarVotacion);
+    } else {
+      ocultarVotacion();
+    }
+
+    // Mostrar overlay en el DOM de forma segura
+    const mostrarOverlay = () => {
       const overlay = document.getElementById('inAppBrowserOverlay');
       const txtLink = document.getElementById('txtLinkCopiar');
       const btnCopiar = document.getElementById('btnCopiarLink');
@@ -150,7 +162,13 @@ function manejarNavegadorInterno() {
           }
         });
       }
-    });
+    };
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", mostrarOverlay);
+    } else {
+      mostrarOverlay();
+    }
   }
 }
 
@@ -167,6 +185,7 @@ function getCookie(name) {
   return null;
 }
 
+// Setea cookie con SameSite=Lax para mejor compatibilidad móvil
 function setCookie(name, value, days) {
   let expires = "";
   if (days) {

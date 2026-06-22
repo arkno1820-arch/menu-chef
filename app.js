@@ -1,5 +1,5 @@
 // CONFIGURACIÓN CENTRAL ENLAZADA DE FORMA TRANSPARENTE
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwbDzAeJ0bmpw3_kRrSC-HK_m_wDOFXHlVw4W1-TckRKRAhAyqLiYqJ_UpdUMQuznLjEA/exec"; 
+const WEB_APP_URL = "https://script.google.com/macros/library/d/1xBUgrAIXkqtWHWowAQHXfrMpLPuQgAZPgV7r55Q5vL0ealSWtxKcw3Xf/13"; 
 const CONTRASEÑA_ADMIN = "canela2014"; 
 
 let votoSeleccionado = null;
@@ -18,9 +18,6 @@ const btnLimpiar = document.getElementById('btnLimpiar');
 const btnBorrarTodo = document.getElementById('btnBorrarTodo');
 const listaHistorial = document.getElementById('listaHistorial');
 
-// Elemento de carga inicial en HTML
-const cargandoInicial = document.getElementById('cargandoInicial');
-
 // Elementos del espacio de comentario/sugerencia del comensal
 const comentarioBox = document.getElementById('comentarioBox');
 const txtComentario = document.getElementById('txtComentario');
@@ -29,6 +26,12 @@ const MAX_PALABRAS_COMENTARIO = 120;
 
 // Contenedor de votación (para ocultarlo cuando ya votó)
 const contenidoVotacion = document.getElementById('contenidoVotacion');
+
+// Si localmente ya sabemos que votó por algún menú, ocultamos la votación preventivamente para evitar parpadeos
+if (localStorage.getItem('ultimoMenuVotado') && contenidoVotacion && btnGuardar) {
+  contenidoVotacion.style.display = 'none';
+  btnGuardar.style.display = 'none';
+}
 
 // Elementos del panel de administrador
 const cajaSugerencias = document.getElementById('cajaSugerencias');
@@ -56,12 +59,34 @@ function escapeHtml(texto) {
 }
 
 // ======================
-// CONTROL DE NAVEGADORES INTERNOS (WhatsApp, Instagram, etc.)
+// CONTROL DE NAVEGADORES INTERNOS (WhatsApp, Instagram, Lectores QR, etc.)
 // ======================
 function detectarNavegadorInterno() {
   const ua = navigator.userAgent || navigator.vendor || window.opera;
-  const inAppRegex = /(Instagram|FBAN|FBIOS|FBAV|Messenger|WhatsApp|Telegram|Twitter|TikTok|Line|Snapchat)/i;
-  return inAppRegex.test(ua);
+  
+  // 1. Detección por firmas de aplicaciones conocidas
+  const appRegex = /(Instagram|FBAN|FBIOS|FBAV|Messenger|WhatsApp|Telegram|Twitter|TikTok|Line|Snapchat)/i;
+  if (appRegex.test(ua)) return true;
+  
+  // 2. Detección en Android: Todos los WebViews contienen "wv" o "WebView"
+  const isAndroid = /Android/i.test(ua);
+  if (isAndroid && (/wv/i.test(ua) || /WebView/i.test(ua))) {
+    return true;
+  }
+  
+  // 3. Detección en iOS: Si no es el navegador nativo (Safari) ni Chrome/Firefox/Edge de iOS,
+  // y se abre desde un visor interno (no tiene "Safari" en el UA o no es standalone)
+  const isIOS = /iPhone|iPad|iPod/i.test(ua);
+  if (isIOS) {
+    const isSafari = /Safari/i.test(ua) && !/CriOS/i.test(ua) && !/FxiOS/i.test(ua) && !/EdgiOS/i.test(ua);
+    const isCommonIOSBrowser = /CriOS|FxiOS|EdgiOS|OptiOS/i.test(ua);
+    
+    if (!isSafari && !isCommonIOSBrowser) {
+      return true;
+    }
+  }
+  
+  return false;
 }
 
 function manejarNavegadorInterno() {
@@ -171,7 +196,6 @@ function mostrarAgradecimiento() {
  const tarjetaVotacion = document.querySelector('#vistaComensal .card');
  if (!tarjetaVotacion) return;
  
- if (cargandoInicial) cargandoInicial.style.display = 'none';
  if (contenidoVotacion) contenidoVotacion.style.display = 'none';
  if (btnGuardar) btnGuardar.style.display = 'none';
  
@@ -195,8 +219,6 @@ async function verificarEstadoVoto() {
    const datos = await respuesta.json();
    currentMenuId = datos.menuId || "1";
    const ultimoMenuVotado = localStorage.getItem('ultimoMenuVotado');
-   
-   if (cargandoInicial) cargandoInicial.style.display = 'none';
 
    if (ultimoMenuVotado === currentMenuId) {
      mostrarAgradecimiento();
@@ -213,7 +235,6 @@ async function verificarEstadoVoto() {
    }
  } catch (e) {
    console.error("Error al verificar estado del voto:", e);
-   if (cargandoInicial) cargandoInicial.style.display = 'none';
    
    const ultimoMenuVotado = localStorage.getItem('ultimoMenuVotado');
    if (ultimoMenuVotado) {

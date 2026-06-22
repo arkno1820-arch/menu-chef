@@ -1,5 +1,5 @@
 // CONFIGURACIÓN CENTRAL ENLAZADA DE FORMA TRANSPARENTE
-const WEB_APP_URL = "https://script.google.com/macros/library/d/1xBUgrAIXkqtWHWowAQHXfrMpLPuQgAZPgV7r55Q5vL0ealSWtxKcw3Xf/13"; 
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwbDzAeJ0bmpw3_kRrSC-HK_m_wDOFXHlVw4W1-TckRKRAhAyqLiYqJ_UpdUMQuznLjEA/exec"; 
 const CONTRASEÑA_ADMIN = "canela2014"; 
 
 let votoSeleccionado = null;

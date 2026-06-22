@@ -5,35 +5,32 @@ const CONTRASEÑA_ADMIN = "canela2014";
 let votoSeleccionado = null;
 let currentMenuId = null;
 
+// Elementos de la interfaz (Basados exactamente en tu HTML real)
 const vistaComensal = document.getElementById('vistaComensal');
 const vistaAdmin = document.getElementById('vistaAdmin');
+const cargandoInicial = document.getElementById('cargandoInicial');
+const contenidoVotacion = document.getElementById('contenidoVotacion');
+
 const btnLike = document.getElementById('btnLike');
 const btnDislike = document.getElementById('btnDislike');
 const btnOmitir = document.getElementById('btnOmitir');
 const lblSeleccion = document.getElementById('lblSeleccion');
 const btnGuardar = document.getElementById('btnGuardar');
-const lnkAccesoAdmin = document.getElementById('lnkAccesoAdmin');
-const btnVolver = document.getElementById('btnVolver');
-const btnLimpiar = document.getElementById('btnLimpiar');
-const btnBorrarTodo = document.getElementById('btnBorrarTodo');
-const listaHistorial = document.getElementById('listaHistorial');
 
-// Elemento de carga inicial en HTML
-const cargandoInicial = document.getElementById('cargandoInicial');
-
-// Elementos del espacio de comentario/sugerencia del comensal
 const comentarioBox = document.getElementById('comentarioBox');
 const txtComentario = document.getElementById('txtComentario');
 const contadorPalabras = document.getElementById('contadorPalabras');
 const MAX_PALABRAS_COMENTARIO = 120;
 
-// Contenedor de votación (para ocultarlo cuando ya votó)
-const contenidoVotacion = document.getElementById('contenidoVotacion');
-
-// Elementos del panel de administrador
+const lnkAccesoAdmin = document.getElementById('lnkAccesoAdmin');
+const btnVolver = document.getElementById('btnVolver');
+const btnLimpiar = document.getElementById('btnLimpiar');
+const btnBorrarTodo = document.getElementById('btnBorrarTodo');
+const listaHistorial = document.getElementById('listaHistorial');
 const cajaSugerencias = document.getElementById('cajaSugerencias');
 const listaSugerencias = document.getElementById('listaSugerencias');
 const tortaNativa = document.getElementById('tortaNativa');
+
 const pctLike = document.getElementById('pctLike');
 const pctDislike = document.getElementById('pctDislike');
 const pctSkip = document.getElementById('pctSkip');
@@ -48,40 +45,19 @@ const botones = [
  { elemento: btnOmitir, valor: 'Omito comentario' }
 ];
 
-// Evita inyección HTML en el panel admin
 function escapeHtml(texto) {
  const div = document.createElement('div');
  div.textContent = texto;
  return div.innerHTML;
 }
 
-// ======================
-// ID DE DISPOSITIVO (para bloqueo real de voto doble en el servidor)
-// ======================
-function obtenerIdDispositivo() {
- let id = localStorage.getItem('idDispositivoRancho');
- if (!id) {
-   id = (window.crypto && crypto.randomUUID)
-     ? crypto.randomUUID()
-     : ('disp_' + Date.now() + '_' + Math.random().toString(36).slice(2));
-   localStorage.setItem('idDispositivoRancho', id);
- }
- return id;
-}
-const idDispositivo = obtenerIdDispositivo();
-
-// ======================
-// BLOQUEO DE VOTO MÚLTIPLE
-// ======================
-
-// Función para mostrar agradecimiento y OCULTAR TODO el contenido de votación
+// Función para bloquear la pantalla mostrando el mensaje de agradecimiento
 function mostrarAgradecimiento() {
  const tarjetaVotacion = document.querySelector('#vistaComensal .card');
  if (!tarjetaVotacion) return;
  
  if (cargandoInicial) cargandoInicial.style.display = 'none';
  if (contenidoVotacion) contenidoVotacion.style.display = 'none';
- if (btnGuardar) btnGuardar.style.display = 'none';
  
  tarjetaVotacion.innerHTML = `
  <div style="padding: 20px 0; text-align: center;">
@@ -90,13 +66,13 @@ function mostrarAgradecimiento() {
  Tu opinión sobre el menú de hoy ya ha sido registrada correctamente.
  </p>
  <p style="color: #64748b; margin-top: 16px; font-size: 0.85rem;">
- Tu participación ha quedado registrada para este turno.
+ Tu participación ha quedado registrada para este turno en este equipo.
  </p>
  </div>
  `;
 }
 
-// Verificar estado del voto al cargar la página
+// Verificar el estado local antes de pintar la pantalla
 async function verificarEstadoVoto() {
  try {
    const respuesta = await fetch(`${WEB_APP_URL}?accion=leer`);
@@ -106,11 +82,11 @@ async function verificarEstadoVoto() {
    
    if (cargandoInicial) cargandoInicial.style.display = 'none';
 
+   // Si el ID del turno en el navegador coincide con el del servidor, bloquea
    if (ultimoMenuVotado === currentMenuId) {
      mostrarAgradecimiento();
    } else {
      if (contenidoVotacion) contenidoVotacion.style.display = 'block';
-     if (btnGuardar) btnGuardar.style.display = 'block';
      
      votoSeleccionado = null;
      if (lblSeleccion) lblSeleccion.textContent = 'Ninguna';
@@ -120,28 +96,26 @@ async function verificarEstadoVoto() {
      if (contadorPalabras) contadorPalabras.textContent = '0';
    }
  } catch (e) {
-   console.error("Error al verificar estado del voto:", e);
+   console.error("Error de red:", e);
    if (cargandoInicial) cargandoInicial.style.display = 'none';
    
+   // Si falla la conexión, el localStorage manda por seguridad preventiva
    const ultimoMenuVotado = localStorage.getItem('ultimoMenuVotado');
    if (ultimoMenuVotado) {
      mostrarAgradecimiento();
    } else {
      if (contenidoVotacion) contenidoVotacion.style.display = 'block';
-     if (btnGuardar) btnGuardar.style.display = 'block';
    }
  }
 }
 
-// ======================
-// EVENTOS DE LOS BOTONES DE VOTO
-// ======================
+// Eventos de los botones de selección
 botones.forEach(item => {
  if (item.elemento) {
    item.elemento.addEventListener('click', () => {
      const ultimoMenuVotado = localStorage.getItem('ultimoMenuVotado');
      if (ultimoMenuVotado === currentMenuId && currentMenuId !== null) {
-       alert("Ya has votado en este turno. No puedes cambiar tu voto.");
+       alert("Ya has votado en este turno.");
        return;
      }
      
@@ -161,9 +135,6 @@ botones.forEach(item => {
  }
 });
 
-// ======================
-// CONTADOR DE PALABRAS
-// ======================
 if (txtComentario) {
  txtComentario.addEventListener('input', () => {
    let palabras = txtComentario.value.trim().split(/\s+/).filter(Boolean);
@@ -171,22 +142,16 @@ if (txtComentario) {
      txtComentario.value = palabras.slice(0, MAX_PALABRAS_COMENTARIO).join(' ');
      palabras = palabras.slice(0, MAX_PALABRAS_COMENTARIO);
    }
-   if (contadorPalabras) {
-     contadorPalabras.textContent = palabras.length;
-     contadorPalabras.parentElement.classList.toggle('limite', palabras.length >= MAX_PALABRAS_COMENTARIO);
-   }
+   if (contadorPalabras) contadorPalabras.textContent = palabras.length;
  });
 }
 
-// ======================
-// BOTÓN GUARDAR VOTO
-// ======================
+// Guardar voto y dejar la marca imborrable en el equipo
 if (btnGuardar) {
  btnGuardar.addEventListener('click', async () => {
    const ultimoMenuVotado = localStorage.getItem('ultimoMenuVotado');
    if (ultimoMenuVotado === currentMenuId && currentMenuId !== null) {
-     alert("Ya has votado en este turno. No se permiten votos múltiples.");
-     mostrarAgradecimiento();
+     alert("Ya has votado en este turno.");
      return;
    }
    
@@ -196,52 +161,29 @@ if (btnGuardar) {
    }
    
    const comentarioTexto = (votoSeleccionado !== 'Me gustó' && txtComentario) ? txtComentario.value.trim() : '';
-   
    btnGuardar.disabled = true;
    btnGuardar.textContent = "Enviando...";
-   botones.forEach(b => { if (b.elemento) b.elemento.style.pointerEvents = 'none'; });
    
    try {
-     const respuestaGuardar = await fetch(WEB_APP_URL, {
+     await fetch(WEB_APP_URL, {
        method: 'POST',
        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-       body: JSON.stringify({ 
-         accion: 'votar', 
-         opcion: votoSeleccionado, 
-         comentario: comentarioTexto,
-         dispositivo: idDispositivo
-       })
+       body: JSON.stringify({ accion: 'votar', opcion: votoSeleccionado, comentario: comentarioTexto })
      });
-
-     let resultado = null;
-     try { resultado = await respuestaGuardar.json(); } catch (_) { /* backend puede no devolver JSON */ }
-
-     if (resultado && resultado.success === false) {
-       // El servidor dice que este dispositivo YA votó en este turno (bloqueo real, no solo local).
-       // Sincronizamos el estado local para reflejar la realidad del servidor.
-       localStorage.setItem('ultimoMenuVotado', currentMenuId || "1");
-       alert(resultado.error || "Ya has votado en este turno.");
-       mostrarAgradecimiento();
-       return;
-     }
      
+     // Guardamos de forma fija el ID del turno actual en el disco del equipo
      localStorage.setItem('ultimoMenuVotado', currentMenuId || "1");
-     
      alert("¡Tu opinión ha sido registrada!");
      window.location.reload();
    } catch (error) {
-     console.error("Error al guardar voto:", error);
-     alert("Error de envío. Por favor, intenta nuevamente.");
+     alert("Error de envío. Intenta nuevamente.");
      btnGuardar.disabled = false;
      btnGuardar.textContent = "Enviar Voto";
-     botones.forEach(b => { if (b.elemento) b.elemento.style.pointerEvents = 'auto'; });
    }
  });
 }
 
-// ======================
-// ACCESO ADMINISTRADOR
-// ======================
+// Acceso al panel de administración
 if (lnkAccesoAdmin) {
  lnkAccesoAdmin.addEventListener('click', () => {
    const clave = prompt("Introduce la contraseña:");
@@ -256,20 +198,13 @@ if (lnkAccesoAdmin) {
 }
 
 if (btnVolver) {
- btnVolver.addEventListener('click', () => {
-   window.location.reload();
- });
+ btnVolver.addEventListener('click', () => { window.location.reload(); });
 }
 
-// ======================
-// OBTENER RESULTADOS (Panel Admin)
-// ======================
+// Cargar datos en el Panel del Chef
 async function obtenerResultadosServidor() {
  try {
-   if (listaHistorial) {
-     listaHistorial.innerHTML = `<p style="color:#94a3b8; font-size:0.9rem; text-align:center;">Cargando historial...</p>`;
-   }
-   
+   if (listaHistorial) listaHistorial.innerHTML = `<p style="color:#94a3b8; text-align:center;">Cargando historial...</p>`;
    const respuesta = await fetch(`${WEB_APP_URL}?accion=leer`);
    const datos = await respuesta.json();
    
@@ -282,151 +217,37 @@ async function obtenerResultadosServidor() {
    if (cantDislike) cantDislike.textContent = vDislike;
    if (cantSkip) cantSkip.textContent = vSkip;
    if (totalVotosTxt) totalVotosTxt.textContent = total;
-
-   const pLike = total > 0 ? (vLike / total) * 100 : 0;
-   const pDislike = total > 0 ? (vDislike / total) * 100 : 0;
-   const pSkip = total > 0 ? (vSkip / total) * 100 : 0;
-
-   if (pctLike) pctLike.textContent = `${pLike.toFixed(1)}%`;
-   if (pctDislike) pctDislike.textContent = `${pDislike.toFixed(1)}%`;
-   if (pctSkip) pctSkip.textContent = `${pSkip.toFixed(1)}%`;
-
-   if (tortaNativa) {
-     const colorLike = '#4ade80';
-     const colorDislike = '#f87171';
-     const colorSkip = '#94a3b8';
-     tortaNativa.style.background = total > 0
-       ? `conic-gradient(${colorLike} 0% ${pLike}%, ${colorDislike} ${pLike}% ${pLike + pDislike}%, ${colorSkip} ${pLike + pDislike}% 100%)`
-       : '#334155';
-   }
    
    const sugerenciasTurno = datos.sugerencias || [];
-
-   // Sugerencias del turno ACTUAL (el backend guarda el texto en la propiedad "texto", no "comentario")
-   if (cajaSugerencias && listaSugerencias) {
-     if (sugerenciasTurno.length > 0) {
-       cajaSugerencias.style.display = 'block';
-       listaSugerencias.innerHTML = sugerenciasTurno.map(s => `
-         <div class="suggestion-item">
-           <span class="suggestion-tag ${s.opcion === 'No me gustó' ? 'dislike' : 'skip'}">
-             ${s.opcion === 'No me gustó' ? '👎' : '💬'}
-           </span>
-           <p class="suggestion-text">${escapeHtml(s.texto || '(sin comentario)')}</p>
-         </div>
-       `).join('');
+   if (sugerenciasTurno.length > 0 && cajaSugerencias && listaSugerencias) {
+     cajaSugerencias.style.display = 'block';
+     listaSugerencias.innerHTML = sugerenciasTurno.map(s => `
+       <div class="suggestion-item" style="margin-bottom:8px; background: rgba(0,0,0,0.2); padding:8px; border-radius:6px;">
+         <span>${s.opcion === 'No me gustó' ? '👎' : '🤫'}</span> ${escapeHtml(s.texto)}
+       </div>
+     `).join('');
+   } else if (cajaSugerencias) {
+     cajaSugerencias.style.display = 'none';
+   }
+   
+   if (tortaNativa) {
+     if (total === 0) {
+       tortaNativa.style.background = '#475569';
+       if (pctLike) pctLike.textContent = '0%';
+       if (pctDislike) pctDislike.textContent = '0%';
+       if (pctSkip) pctSkip.textContent = '0%';
      } else {
-       cajaSugerencias.style.display = 'none';
-       listaSugerencias.innerHTML = '';
+       const pLike = Math.round((vLike / total) * 100);
+       const pDislike = Math.round((vDislike / total) * 100);
+       const pSkip = Math.round((vSkip / total) * 100);
+       if (pctLike) pctLike.textContent = `${pLike}%`;
+       if (pctDislike) pctDislike.textContent = `${pDislike}%`;
+       if (pctSkip) pctSkip.textContent = `${pSkip}%`;
+       tortaNativa.style.background = `conic-gradient(#10b981 0% ${pLike}%, #e11d48 ${pLike}% ${pLike+pDislike}%, #475569 ${pLike+pDislike}% 100%)`;
      }
    }
-
-   // Historial de turnos PASADOS (no el turno actual)
-   const historialTurnos = datos.historial || [];
+   
    if (listaHistorial) {
-     if (historialTurnos.length > 0) {
-       listaHistorial.innerHTML = historialTurnos.map(turno => {
-         const sugerenciasHtml = (turno.sugerencias || []).map(s => `
-           <div class="suggestion-item">
-             <span class="suggestion-tag ${s.opcion === 'No me gustó' ? 'dislike' : 'skip'}">
-               ${s.opcion === 'No me gustó' ? '👎' : '💬'}
-             </span>
-             <p class="suggestion-text">${escapeHtml(s.texto || '(sin comentario)')}</p>
-           </div>
-         `).join('');
-
-         return `
-           <div class="suggestion-item" style="flex-direction:column; align-items:flex-start; gap:6px;">
-             <strong style="color:#fef08a;">${escapeHtml(String(turno.fecha || ''))}</strong>
-             <span style="color:#94a3b8; font-size:0.85rem;">
-               👍 ${turno['Me gustó'] || 0} &nbsp; 👎 ${turno['No me gustó'] || 0} &nbsp; 🤫 ${turno['Omito comentario'] || 0} &nbsp; Total: ${turno.total || 0}
-             </span>
-             ${sugerenciasHtml}
-           </div>
-         `;
-       }).join('');
-     } else {
-       listaHistorial.innerHTML = `<p style="color:#94a3b8; font-size:0.9rem; text-align:center;">Aún no hay turnos cerrados en el historial.</p>`;
-     }
-   }
- } catch (error) {
-   console.error("Error al obtener resultados:", error);
-   if (listaHistorial) {
-     listaHistorial.innerHTML = `<p style="color:#f87171; font-size:0.9rem; text-align:center;">No se pudieron cargar los resultados. Intenta nuevamente.</p>`;
-   }
- }
-}
-
-// ======================
-// CERRAR RANCHO Y REINICIAR (archiva el turno actual y empieza uno nuevo)
-// ======================
-if (btnLimpiar) {
- btnLimpiar.addEventListener('click', async () => {
-   const confirmar = confirm("¿Cerrar el rancho actual? Los votos y sugerencias de este turno se guardarán en el historial y comenzará un turno nuevo.");
-   if (!confirmar) return;
-
-   const textoOriginal = btnLimpiar.textContent;
-   btnLimpiar.disabled = true;
-   btnLimpiar.textContent = "Cerrando...";
-
-   try {
-     const resp = await fetch(WEB_APP_URL, {
-       method: 'POST',
-       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-       body: JSON.stringify({ accion: 'limpiar' })
-     });
-     let resultado = null;
-     try { resultado = await resp.json(); } catch (_) {}
-     if (resultado && resultado.success === false) {
-       throw new Error(resultado.error || 'El servidor rechazó la acción.');
-     }
-     alert("Rancho cerrado. Comenzó un nuevo turno.");
-     obtenerResultadosServidor();
-   } catch (error) {
-     console.error("Error al cerrar rancho:", error);
-     alert("No se pudo cerrar el rancho. Intenta nuevamente.");
-   } finally {
-     btnLimpiar.disabled = false;
-     btnLimpiar.textContent = textoOriginal;
-   }
- });
-}
-
-// ======================
-// ELIMINAR HISTORIAL COMPLETO (acción destructiva e irreversible)
-// ======================
-if (btnBorrarTodo) {
- btnBorrarTodo.addEventListener('click', async () => {
-   const confirmar = confirm("¿ELIMINAR PERMANENTEMENTE todo el historial y reiniciar el sistema? Esta acción no se puede deshacer.");
-   if (!confirmar) return;
-
-   const textoOriginal = btnBorrarTodo.textContent;
-   btnBorrarTodo.disabled = true;
-   btnBorrarTodo.textContent = "Borrando...";
-
-   try {
-     const resp = await fetch(WEB_APP_URL, {
-       method: 'POST',
-       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-       body: JSON.stringify({ accion: 'borrar_todo_sistema' })
-     });
-     let resultado = null;
-     try { resultado = await resp.json(); } catch (_) {}
-     if (resultado && resultado.success === false) {
-       throw new Error(resultado.error || 'El servidor rechazó la acción.');
-     }
-     alert("Historial eliminado correctamente.");
-     obtenerResultadosServidor();
-   } catch (error) {
-     console.error("Error al borrar historial:", error);
-     alert("No se pudo borrar el historial. Intenta nuevamente.");
-   } finally {
-     btnBorrarTodo.disabled = false;
-     btnBorrarTodo.textContent = textoOriginal;
-   }
- });
-}
-
-// ======================
-// INICIO: se ejecuta al cargar el script
-// ======================
-verificarEstadoVoto();
+     listaHistorial.innerHTML = "";
+     const historial = datos.historial || [];
+     if (historial.length === 0) {

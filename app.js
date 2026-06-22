@@ -1,11 +1,11 @@
 // CONFIGURACIÓN CENTRAL ENLAZADA DE FORMA TRANSPARENTE
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwbDzAeJ0bmpw3_kRrSC-HK_m_wDOFXHlVw4W1-TckRKRAhAyqLiYqJ_UpdUMQuznLjEA/exec"; 
+const WEB_APP_URL = "https://script.google.com/macros/library/d/1xBUgrAIXkqtWHWowAQHXfrMpLPuQgAZPgV7r55Q5vL0ealSWtxKcw3Xf/13"; 
 const CONTRASEÑA_ADMIN = "canela2014"; 
 
 let votoSeleccionado = null;
 let currentMenuId = null;
 
-// Elementos de la interfaz (Basados exactamente en tu HTML real)
+// Elementos de la interfaz (Acoplados exactamente a tu HTML original)
 const vistaComensal = document.getElementById('vistaComensal');
 const vistaAdmin = document.getElementById('vistaAdmin');
 const cargandoInicial = document.getElementById('cargandoInicial');
@@ -39,10 +39,11 @@ const cantDislike = document.getElementById('cantDislike');
 const cantSkip = document.getElementById('cantSkip');
 const totalVotosTxt = document.getElementById('totalVotos');
 
+// Mapeo estricto con los valores de tus botones HTML
 const botones = [
- { elemento: btnLike, valor: 'Me gustó' },
- { elemento: btnDislike, valor: 'No me gustó' },
- { elemento: btnOmitir, valor: 'Omito comentario' }
+ { elemento: btnLike, valor: '👍 Me gustó' },
+ { elemento: btnDislike, valor: '👎 No me gustó' },
+ { elemento: btnOmitir, valor: '🤫 Omito comentario' }
 ];
 
 function escapeHtml(texto) {
@@ -51,7 +52,7 @@ function escapeHtml(texto) {
  return div.innerHTML;
 }
 
-// Función para bloquear la pantalla mostrando el mensaje de agradecimiento
+// Bloquea la pantalla mostrando el mensaje de agradecimiento
 function mostrarAgradecimiento() {
  const tarjetaVotacion = document.querySelector('#vistaComensal .card');
  if (!tarjetaVotacion) return;
@@ -82,7 +83,7 @@ async function verificarEstadoVoto() {
    
    if (cargandoInicial) cargandoInicial.style.display = 'none';
 
-   // Si el ID del turno en el navegador coincide con el del servidor, bloquea
+   // Si el ID del turno guardado en el navegador coincide con el del servidor, bloquea
    if (ultimoMenuVotado === currentMenuId) {
      mostrarAgradecimiento();
    } else {
@@ -99,7 +100,7 @@ async function verificarEstadoVoto() {
    console.error("Error de red:", e);
    if (cargandoInicial) cargandoInicial.style.display = 'none';
    
-   // Si falla la conexión, el localStorage manda por seguridad preventiva
+   // Si falla internet, el localStorage manda preventivamente
    const ultimoMenuVotado = localStorage.getItem('ultimoMenuVotado');
    if (ultimoMenuVotado) {
      mostrarAgradecimiento();
@@ -109,7 +110,7 @@ async function verificarEstadoVoto() {
  }
 }
 
-// Eventos de los botones de selección
+// Asignar eventos de clic a los botones de selección
 botones.forEach(item => {
  if (item.elemento) {
    item.elemento.addEventListener('click', () => {
@@ -124,7 +125,8 @@ botones.forEach(item => {
      botones.forEach(b => { if (b.elemento) b.elemento.classList.remove('active'); });
      item.elemento.classList.add('active');
      
-     if (item.valor === 'Me gustó') {
+     // Mostrar caja de comentarios solo si no es "Me gustó"
+     if (item.valor === '👍 Me gustó') {
        if (comentarioBox) comentarioBox.style.display = 'none';
        if (txtComentario) txtComentario.value = '';
        if (contadorPalabras) contadorPalabras.textContent = '0';
@@ -135,6 +137,7 @@ botones.forEach(item => {
  }
 });
 
+// Contador de palabras del área de sugerencias
 if (txtComentario) {
  txtComentario.addEventListener('input', () => {
    let palabras = txtComentario.value.trim().split(/\s+/).filter(Boolean);
@@ -146,7 +149,7 @@ if (txtComentario) {
  });
 }
 
-// Guardar voto y dejar la marca imborrable en el equipo
+// Enviar y guardar el voto de forma persistente
 if (btnGuardar) {
  btnGuardar.addEventListener('click', async () => {
    const ultimoMenuVotado = localStorage.getItem('ultimoMenuVotado');
@@ -160,18 +163,23 @@ if (btnGuardar) {
      return;
    }
    
-   const comentarioTexto = (votoSeleccionado !== 'Me gustó' && txtComentario) ? txtComentario.value.trim() : '';
+   const comentarioTexto = (votoSeleccionado !== '👍 Me gustó' && txtComentario) ? txtComentario.value.trim() : '';
    btnGuardar.disabled = true;
    btnGuardar.textContent = "Enviando...";
    
    try {
+     // Normalizamos el voto para que coincida con lo que espera tu Google Sheets original
+     let votoLimpio = 'Me gustó';
+     if (votoSeleccionado === '👎 No me gustó') votoLimpio = 'No me gustó';
+     if (votoSeleccionado === '🤫 Omito comentario') votoLimpio = 'Omito comentario';
+
      await fetch(WEB_APP_URL, {
        method: 'POST',
        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-       body: JSON.stringify({ accion: 'votar', opcion: votoSeleccionado, comentario: comentarioTexto })
+       body: JSON.stringify({ accion: 'votar', opcion: votoLimpio, comentario: comentarioTexto })
      });
      
-     // Guardamos de forma fija el ID del turno actual en el disco del equipo
+     // Marcamos el turno actual como completado en el disco duro del equipo
      localStorage.setItem('ultimoMenuVotado', currentMenuId || "1");
      alert("¡Tu opinión ha sido registrada!");
      window.location.reload();
@@ -183,7 +191,7 @@ if (btnGuardar) {
  });
 }
 
-// Acceso al panel de administración
+// Acceso al Panel Administrativo
 if (lnkAccesoAdmin) {
  lnkAccesoAdmin.addEventListener('click', () => {
    const clave = prompt("Introduce la contraseña:");
@@ -201,7 +209,7 @@ if (btnVolver) {
  btnVolver.addEventListener('click', () => { window.location.reload(); });
 }
 
-// Cargar datos en el Panel del Chef
+// Cargar reportes en el Panel del Chef
 async function obtenerResultadosServidor() {
  try {
    if (listaHistorial) listaHistorial.innerHTML = `<p style="color:#94a3b8; text-align:center;">Cargando historial...</p>`;
@@ -222,7 +230,7 @@ async function obtenerResultadosServidor() {
    if (sugerenciasTurno.length > 0 && cajaSugerencias && listaSugerencias) {
      cajaSugerencias.style.display = 'block';
      listaSugerencias.innerHTML = sugerenciasTurno.map(s => `
-       <div class="suggestion-item" style="margin-bottom:8px; background: rgba(0,0,0,0.2); padding:8px; border-radius:6px;">
+       <div class="suggestion-item" style="margin-bottom:8px; background: rgba(0,0,0,0.2); padding:8px; border-radius:6px; color:#f8fafc;">
          <span>${s.opcion === 'No me gustó' ? '👎' : '🤫'}</span> ${escapeHtml(s.texto)}
        </div>
      `).join('');
@@ -241,13 +249,3 @@ async function obtenerResultadosServidor() {
        const pDislike = Math.round((vDislike / total) * 100);
        const pSkip = Math.round((vSkip / total) * 100);
        if (pctLike) pctLike.textContent = `${pLike}%`;
-       if (pctDislike) pctDislike.textContent = `${pDislike}%`;
-       if (pctSkip) pctSkip.textContent = `${pSkip}%`;
-       tortaNativa.style.background = `conic-gradient(#10b981 0% ${pLike}%, #e11d48 ${pLike}% ${pLike+pDislike}%, #475569 ${pLike+pDislike}% 100%)`;
-     }
-   }
-   
-   if (listaHistorial) {
-     listaHistorial.innerHTML = "";
-     const historial = datos.historial || [];
-     if (historial.length === 0) {

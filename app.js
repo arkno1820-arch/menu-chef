@@ -1,7 +1,7 @@
 // ============================================================
 // CONFIGURACIÓN CENTRAL
 // ============================================================
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbz7pu4rkHuWSqDXibhnQvTVoTfdFhwtnksWX56XIYvI9UOUdG_tyhJaPS9nIVlnXlCs/exec";
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwbDzAeJ0bmpw3_kRrSC-HK_m_wDOFXHlVw4W1-TckRKRAhAyqLiYqJ_UpdUMQuznLjEA/exec";
 const CONTRASEÑA_ADMIN = "canela2014";
 
 let votoSeleccionado = null;
@@ -52,7 +52,9 @@ function escapeHtml(t) {
 }
 
 // ============================================================
-// DETECCIÓN DE NAVEGADOR INTERNO (WebView / app de escaneo QR)
+// DETECCIÓN DE NAVEGADOR INTERNO — EJECUCIÓN SÍNCRONA INMEDIATA
+// Se ejecuta antes que cualquier cosa async para evitar flash
+// de la UI de votación en WebViews.
 // ============================================================
 function esNavegadorInterno() {
   const ua = navigator.userAgent || '';
@@ -63,44 +65,21 @@ function esNavegadorInterno() {
   // Android WebView explícito
   if (/Android/i.test(ua) && (/wv\b/i.test(ua) || /WebView/i.test(ua))) return true;
 
-  // iOS: si no es Safari/Chrome/Firefox/Edge nativos, es un WebView
+  // iOS — la clave: Safari nativo tiene navigator.standalone definido (true/false).
+  // SFSafariViewController y cualquier WebView de app de escaneo QR lo tienen como undefined.
+  // Esto detecta correctamente lectores QR, apps de mensajería, etc., aunque su UA parezca Safari.
   if (/iPhone|iPad|iPod/i.test(ua)) {
-    const esNavNativo = /Safari/i.test(ua) && /Version/i.test(ua)
-      || /CriOS/i.test(ua)
-      || /FxiOS/i.test(ua)
-      || /EdgiOS/i.test(ua);
-    if (!esNavNativo) return true;
+    // Chrome/Firefox/Edge en iOS tienen su propio identificador → son navegadores nativos
+    if (/CriOS|FxiOS|EdgiOS/i.test(ua)) return false;
+    // Si standalone es undefined → WebView o SFSafariViewController → mostrar overlay
+    if (typeof window.navigator.standalone === 'undefined') return true;
   }
 
   return false;
 }
 
-function manejarNavegadorInterno() {
-  if (!esNavegadorInterno()) return false;
-
-  const url = window.location.href;
-  const esAndroid = /Android/i.test(navigator.userAgent);
-  const esIOS     = /iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-  // Ocultar la votación para que no sea accesible en WebView
-  if (contenidoVotacion) contenidoVotacion.style.display = 'none';
-  if (btnGuardar)        btnGuardar.style.display = 'none';
-
-  if (esAndroid) {
-    // Intenta abrir en el navegador predeterminado de Android
-    const urlSinProtocolo = url.replace(/^https?:\/\//, '');
-    window.location.href = `intent://${urlSinProtocolo}#Intent;scheme=https;action=android.intent.action.VIEW;end`;
-    // Si el intent falla (algunos dispositivos lo bloquean), muestra el overlay igualmente
-    setTimeout(() => mostrarOverlay(url, 'android'), 1500);
-  } else if (esIOS) {
-    mostrarOverlay(url, 'ios');
-  } else {
-    mostrarOverlay(url, 'otro');
-  }
-
-  return true;
-}
-
+// Ejecutar la detección INMEDIATAMENTE (síncronamente) al cargar el script,
+// antes de que cualquier función async pueda mostrar la UI de votación.
 function mostrarOverlay(url, sistema) {
   const overlay        = document.getElementById('inAppBrowserOverlay');
   const mensajeDiv     = document.getElementById('mensajeSistema');
@@ -140,6 +119,46 @@ function mostrarOverlay(url, sistema) {
 
   overlay.style.display = 'flex';
   document.body.classList.add('no-scroll');
+}
+
+
+(function chequeoInmediato() {
+  if (!esNavegadorInterno()) return;
+
+  // Ocultar votación de inmediato para evitar cualquier flash
+  const cv = document.getElementById('contenidoVotacion');
+  const bg = document.getElementById('btnGuardar');
+  if (cv) cv.style.display = 'none';
+  if (bg) bg.style.display = 'none';
+
+  const url       = window.location.href;
+  const esAndroid = /Android/i.test(navigator.userAgent);
+  const esIOS     = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+  if (esAndroid) {
+    const urlSinProtocolo = url.replace(/^https?:\/\//, '');
+    window.location.href = `intent://${urlSinProtocolo}#Intent;scheme=https;action=android.intent.action.VIEW;end`;
+    setTimeout(() => mostrarOverlay(url, 'android'), 1500);
+  } else if (esIOS) {
+    // DOMContentLoaded para asegurarnos de que el overlay ya existe en el DOM
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => mostrarOverlay(url, 'ios'));
+    } else {
+      mostrarOverlay(url, 'ios');
+    }
+  } else {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => mostrarOverlay(url, 'otro'));
+    } else {
+      mostrarOverlay(url, 'otro');
+    }
+  }
+})();
+
+function manejarNavegadorInterno() {
+  // Solo se usa en verificarEstadoVoto() como segunda barrera; el trabajo real
+  // ya lo hizo chequeoInmediato() de forma síncrona arriba.
+  return esNavegadorInterno();
 }
 
 // ============================================================

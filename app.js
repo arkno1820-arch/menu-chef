@@ -1,7 +1,7 @@
 // ============================================================
 // CONFIGURACIÓN CENTRAL
 // ============================================================
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwbDzAeJ0bmpw3_kRrSC-HK_m_wDOFXHlVw4W1-TckRKRAhAyqLiYqJ_UpdUMQuznLjEA/exec";
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbz7pu4rkHuWSqDXibhnQvTVoTfdFhwtnksWX56XIYvI9UOUdG_tyhJaPS9nIVlnXlCs/exec";
 const CONTRASEÑA_ADMIN = "canela2014";
 
 let votoSeleccionado = null;
